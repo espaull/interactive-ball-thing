@@ -10,6 +10,10 @@ export const PREVIEW_COLOR = "#6b7280";
 export const ACCENT = "#3b82f6";
 export const ERASER_COLOR = "#ef4444";
 
+// Boost strips: a warm orange band with light chevrons running along it.
+export const BOOST_COLOR = "#fb923c";
+export const BOOST_CHEVRON_COLOR = "#fff7ed";
+
 // Balls get one of these at random.
 export const BALL_COLORS = [
   "#ef4444",

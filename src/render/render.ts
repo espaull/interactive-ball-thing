@@ -5,6 +5,7 @@ import type { Overlay } from "../tools";
 import type { Playground } from "../world/playground";
 import type { Point } from "../geometry/point";
 import { ACCENT, ERASER_COLOR, LINE_COLOR, PREVIEW_COLOR } from "../palette";
+import { drawBoostStrip } from "./boost";
 import { drawBubble } from "./bubble";
 
 const LINE_WIDTH_PX = 4;
@@ -48,12 +49,19 @@ export function render(
   overlay: Overlay,
   effects: Effects,
 ): void {
-  const { preview, curveHandles, lineEnds, snapTargets, eraser } = overlay;
+  const { preview, curveHandles, lineEnds, snapTargets, eraser, boostPreview } =
+    overlay;
+  const time = performance.now() / 1000;
   ctx.save();
   ctx.clearRect(0, 0, camera.width, camera.height);
   camera.apply(ctx);
 
   drawBackground(ctx, camera, background);
+
+  // Boost strips go under the lines, so the track stays clear on top.
+  for (const boost of playground.boosts)
+    drawBoostStrip(ctx, boost.points, time);
+  if (boostPreview) drawBoostStrip(ctx, boostPreview, time, 0.6);
 
   ctx.lineWidth = LINE_WIDTH_PX;
   ctx.lineCap = "round";
@@ -129,7 +137,6 @@ export function render(
   }
 
   // Bubbles go on top, since you can see through them.
-  const time = performance.now() / 1000;
   for (const bubble of playground.bubbles) {
     const { x, y } = bubble.position;
     // A quick squash-and-stretch after each bump, dying away in ~0.3s.

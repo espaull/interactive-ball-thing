@@ -1,5 +1,6 @@
 import type { Camera } from "../camera";
 import type { Playground } from "../world/playground";
+import { BoostTool } from "./boost";
 import { CurveTool } from "./curve";
 import { EraserTool } from "./eraser";
 import { MoveTool } from "./move";
@@ -25,6 +26,7 @@ export function createTools(playground: Playground, camera: Camera): Tool[] {
   return [
     new PencilTool(ctx),
     new CurveTool(ctx),
+    new BoostTool(ctx),
     new EraserTool(ctx),
     new MoveTool(ctx),
     new BallTool(ctx),

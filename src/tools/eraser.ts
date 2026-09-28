@@ -10,12 +10,12 @@ const RADIUS_PX = 18;
 export class EraserTool implements Tool {
   label = "Erase";
   icon = "🧽";
-  title = "Rub out parts of lines";
+  title = "Rub out parts of lines and boosts";
   cursor = "none"; // the eraser's circle is drawn instead
   hints = {
     mouse:
-      "Drag over lines to rub them out · the cut ends get rings you can draw from",
-    touch: "Drag over lines to rub them out",
+      "Drag over lines and boosts to rub them out · the cut ends get rings you can draw from",
+    touch: "Drag over lines and boosts to rub them out",
   };
   popsBubbles = true;
 

@@ -2,9 +2,11 @@ import { World, ChainShape, CircleShape, type Body } from "planck";
 import { erasePolyline } from "../geometry/erase";
 import type { Point } from "../geometry/point";
 import { BALL_COLORS } from "../palette";
+import { BOOST_ACCELERATION, BOOST_MAX_SPEED, BoostZone } from "./boosts";
 import { Bubble, BubbleBehaviour, createBubble } from "./bubbles";
 import { PX_PER_M, toMetres, toPixels } from "./units";
 
+export { BoostZone } from "./boosts";
 export { Bubble } from "./bubbles";
 
 const BALL_RADIUS_M = 0.4;
@@ -67,6 +69,7 @@ export class Playground {
   readonly lines: Line[] = [];
   readonly balls: Ball[] = [];
   readonly bubbles: Bubble[] = [];
+  readonly boosts: BoostZone[] = [];
   // Highest and lowest points of any drawn line, in pixels.
   private highestLineY = Infinity;
   private lowestLineY = -Infinity;
@@ -87,6 +90,7 @@ export class Playground {
 
   step(dt: number): void {
     this.time += dt;
+    this.applyBoosts();
     this.bubbleBehaviour.beforeStep(this.time);
     this.world.step(dt, 8, 3);
     for (const bubble of this.bubbleBehaviour.afterStep(this.time))
@@ -116,14 +120,21 @@ export class Playground {
     this.lines.splice(index, 1);
   }
 
-  // Rub out every part of every line inside a circle, splitting lines where
-  // the eraser cuts through them.
+  // Rub out every part of every line and boost strip inside a circle,
+  // splitting them where the eraser cuts through.
   eraseAt(x: number, y: number, radius: number): void {
     for (const line of [...this.lines]) {
       const pieces = erasePolyline(line.points, { x, y }, radius);
       if (!pieces) continue;
       this.removeLine(line);
       for (const piece of pieces) this.addLine(piece);
+    }
+    for (const boost of [...this.boosts]) {
+      const pieces = erasePolyline(boost.points, { x, y }, radius);
+      if (!pieces) continue;
+      this.boosts.splice(this.boosts.indexOf(boost), 1);
+      // Pieces keep the order of the points, so they still point the same way.
+      for (const piece of pieces) this.addBoost(piece);
     }
   }
 
@@ -168,6 +179,36 @@ export class Playground {
   private destroyChain(body: Body): void {
     this.lineBodies.delete(body);
     this.world.destroyBody(body);
+  }
+
+  // --- Boost strips ---
+
+  // A strip along `points`, pushing balls in the direction they run.
+  addBoost(points: Point[]): void {
+    if (points.length < 2) return;
+    this.boosts.push(new BoostZone(points));
+  }
+
+  // Push each ball that's on a strip along it, until it reaches top speed.
+  // Only one strip pushes a ball at a time, so overlapping strips don't add up.
+  private applyBoosts(): void {
+    if (this.boosts.length === 0) return;
+    for (const ball of this.balls) {
+      const position = ball.position;
+      for (const boost of this.boosts) {
+        const dir = boost.directionAt(position);
+        if (!dir) continue;
+        const v = ball.body.getLinearVelocity();
+        if (v.x * dir.x + v.y * dir.y < BOOST_MAX_SPEED) {
+          const push = ball.body.getMass() * BOOST_ACCELERATION;
+          ball.body.applyForceToCenter(
+            { x: dir.x * push, y: dir.y * push },
+            true,
+          );
+        }
+        break;
+      }
+    }
   }
 
   // --- Balls and bubbles ---
@@ -250,6 +291,7 @@ export class Playground {
     this.lines.length = 0;
     this.balls.length = 0;
     this.bubbles.length = 0;
+    this.boosts.length = 0;
     this.bubbleBehaviour.clear();
     this.lineBodies.clear();
     this.lowestLineY = -Infinity;

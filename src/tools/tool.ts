@@ -14,6 +14,8 @@ export interface Overlay {
   snapTargets: Point[];
   // The eraser's circle, in world pixels.
   eraser: { x: number; y: number; radius: number } | null;
+  // The boost strip being painted.
+  boostPreview: Point[] | null;
 }
 
 // What the tools share.

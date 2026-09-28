@@ -162,3 +162,133 @@ describe("bubbles", () => {
     expect([left.hits, right.hits]).toEqual([1, 1]);
   });
 });
+
+describe("boost strips", () => {
+  const speed = (pg: Playground) => {
+    const v = pg.balls[0].body.getLinearVelocity();
+    return Math.hypot(v.x, v.y);
+  };
+
+  it("push a resting ball along the way they were painted", () => {
+    const pg = new Playground();
+    pg.addLine([
+      { x: 0, y: 400 },
+      { x: 2000, y: 400 },
+    ]);
+    pg.addBoost([
+      { x: 100, y: 390 },
+      { x: 600, y: 390 },
+    ]);
+    const ball = pg.addBall(150, 380);
+    run(pg, 1);
+    expect(ball.body.getLinearVelocity().x).toBeGreaterThan(5);
+  });
+
+  it("can lift a ball straight up against gravity", () => {
+    const pg = new Playground();
+    // Painted bottom to top.
+    pg.addBoost([
+      { x: 400, y: 600 },
+      { x: 400, y: 100 },
+    ]);
+    const ball = pg.addBall(400, 580);
+    run(pg, 0.5);
+    expect(ball.position.y).toBeLessThan(560);
+  });
+
+  it("stop pushing at top speed", () => {
+    const pg = new Playground();
+    pg.addLine([
+      { x: 0, y: 400 },
+      { x: 40000, y: 400 },
+    ]);
+    pg.addBoost([
+      { x: 0, y: 390 },
+      { x: 40000, y: 390 },
+    ]);
+    pg.addBall(100, 380);
+    run(pg, 5);
+    expect(speed(pg)).toBeGreaterThan(18);
+    expect(speed(pg)).toBeLessThan(21);
+  });
+
+  it("slow a ball down when painted against it", () => {
+    const pg = new Playground();
+    pg.addLine([
+      { x: 0, y: 400 },
+      { x: 4000, y: 400 },
+    ]);
+    // Pointing left, while the ball heads right.
+    pg.addBoost([
+      { x: 900, y: 390 },
+      { x: 300, y: 390 },
+    ]);
+    const ball = pg.addBall(100, 384);
+    ball.body.setLinearVelocity({ x: 10, y: 0 });
+    run(pg, 0.8);
+    expect(ball.body.getLinearVelocity().x).toBeLessThan(6);
+  });
+
+  it("are rubbed out by the eraser, keeping their direction", () => {
+    const pg = new Playground();
+    pg.addBoost([
+      { x: 0, y: 100 },
+      { x: 300, y: 100 },
+    ]);
+    pg.eraseAt(150, 100, 20);
+    expect(pg.boosts).toHaveLength(2);
+    for (const boost of pg.boosts) {
+      expect(boost.points.at(-1)!.x).toBeGreaterThan(boost.points[0].x);
+    }
+  });
+
+  // What they're for: getting a ball round a loop-the-loop.
+  describe("on a loop-the-loop", () => {
+    // A flat run-up into a loop of radius 120px (3m). With y pointing down,
+    // the ball goes up the right side, over the top, and down the left. In
+    // 2D a closed loop would cross its own run-up (the ball crashes into the
+    // back of it), so the loop stops at the left side, above the run-up:
+    // the ball flies off there and drops back onto the run-up.
+    const centre = { x: 600, y: 480 };
+    const R = 120;
+    function loopTrack(pg: Playground): void {
+      const points = [{ x: 0, y: 600 }];
+      for (let deg = 0; deg <= 270; deg += 3) {
+        const a = (deg * Math.PI) / 180;
+        points.push({
+          x: centre.x + R * Math.sin(a),
+          y: centre.y + R * Math.cos(a),
+        });
+      }
+      pg.addLine(points);
+    }
+    // Did the ball make it over the top and into the upper-left of the loop?
+    function wentOverTheTop(pg: Playground, seconds: number): boolean {
+      let over = false;
+      run(pg, seconds, () => {
+        const p = pg.balls[0]?.position;
+        if (p && p.x < centre.x - R * 0.4 && p.y < centre.y) over = true;
+      });
+      return over;
+    }
+
+    it("a boosted ball goes all the way round", () => {
+      const pg = new Playground();
+      loopTrack(pg);
+      pg.addBoost([
+        { x: 50, y: 590 },
+        { x: 580, y: 590 },
+      ]);
+      pg.addBall(80, 584);
+      expect(wentOverTheTop(pg, 4)).toBe(true);
+    });
+
+    it("an unboosted ball, even with a push, doesn't", () => {
+      const pg = new Playground();
+      loopTrack(pg);
+      const ball = pg.addBall(80, 584);
+      ball.body.setLinearVelocity({ x: 8, y: 0 });
+      expect(wentOverTheTop(pg, 4)).toBe(false);
+    });
+  });
+});

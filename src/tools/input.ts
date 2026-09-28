@@ -76,6 +76,7 @@ export class Input {
       lineEnds: null,
       snapTargets: [],
       eraser: null,
+      boostPreview: null,
       ...this.tool.overlay?.(hover),
     };
   }
