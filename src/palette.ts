@@ -50,3 +50,7 @@ export const PORTAL_COLORS = [
 // Goal cups: gold, with a lighter shine.
 export const CUP_COLOR = "#f59e0b";
 export const CUP_SHINE = "#fde68a";
+
+// Cannons: a dark slate barrel on a wooden wheel.
+export const CANNON_COLOR = "#334155";
+export const CANNON_WHEEL = "#92400e";

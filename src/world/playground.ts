@@ -4,12 +4,20 @@ import type { Point } from "../geometry/point";
 import { BALL_COLORS } from "../palette";
 import { BOOST_ACCELERATION, BOOST_MAX_SPEED, BoostZone } from "./boosts";
 import { Crossings } from "./crossings";
+import {
+  CANNON_INTERVAL,
+  CANNON_RADIUS_PX,
+  launchVelocity,
+  muzzle,
+  type Cannon,
+} from "./cannons";
 import { CUP_RADIUS_PX, Cup, createCup } from "./cups";
 import { Portals, type PortalPair, type Teleport } from "./portals";
 import { Bubble, BubbleBehaviour, createBubble } from "./bubbles";
 import { PX_PER_M, toMetres, toPixels } from "./units";
 
 export { BoostZone } from "./boosts";
+export type { Cannon } from "./cannons";
 export { Cup } from "./cups";
 export type { PortalPair, Teleport } from "./portals";
 export { Bubble } from "./bubbles";
@@ -76,6 +84,7 @@ export class Playground {
   readonly bubbles: Bubble[] = [];
   readonly boosts: BoostZone[] = [];
   readonly cups: Cup[] = [];
+  readonly cannons: Cannon[] = [];
   // Highest and lowest points of any drawn line, in pixels.
   private highestLineY = Infinity;
   private lowestLineY = -Infinity;
@@ -97,6 +106,8 @@ export class Playground {
   onTeleport: (teleport: Teleport) => void = () => {};
   // Called whenever a cup catches a ball, for the celebration.
   onCatch: (cup: Cup) => void = () => {};
+  // Called whenever a cannon fires, for the puff and thump.
+  onFire: (cannon: Cannon) => void = () => {};
 
   private portals = new Portals();
 
@@ -112,6 +123,7 @@ export class Playground {
 
   step(dt: number): void {
     this.time += dt;
+    this.fireCannons();
     this.applyBoosts();
     this.bubbleBehaviour.beforeStep(this.time);
     this.world.step(dt, 8, 3);
@@ -165,6 +177,12 @@ export class Playground {
     }
     // A portal it touches goes, along with its partner.
     this.portals.removeNear(x, y, radius);
+    // And any cannon.
+    for (const cannon of [...this.cannons]) {
+      if (Math.hypot(cannon.x - x, cannon.y - y) < radius + CANNON_RADIUS_PX) {
+        this.cannons.splice(this.cannons.indexOf(cannon), 1);
+      }
+    }
     // So does any cup it touches.
     for (const cup of [...this.cups]) {
       if (Math.hypot(cup.x - x, cup.y - y) < radius + CUP_RADIUS_PX) {
@@ -258,6 +276,47 @@ export class Playground {
   // A linked pair of portals at `a` and `b`.
   addPortalPair(a: Point, b: Point, color: string): void {
     this.portals.add({ a, b, color });
+  }
+
+  // --- Cannons ---
+
+  // A cannon at (x, y) firing along `angle` with `power` (0 to 1). Its first
+  // shot comes shortly after it's placed.
+  addCannon(x: number, y: number, angle: number, power: number): Cannon {
+    const cannon = {
+      x,
+      y,
+      angle,
+      power,
+      active: true,
+      aiming: false,
+      nextShotAt: this.time + 0.5,
+    };
+    this.cannons.push(cannon);
+    return cannon;
+  }
+
+  // The cannon at a point (with a little slack for fingers), if any.
+  cannonAt(x: number, y: number): Cannon | null {
+    // The most recently placed one wins, as it's drawn on top.
+    for (let i = this.cannons.length - 1; i >= 0; i--) {
+      const c = this.cannons[i];
+      if (Math.hypot(c.x - x, c.y - y) < CANNON_RADIUS_PX + 6) return c;
+    }
+    return null;
+  }
+
+  // Fire every cannon whose next shot is due.
+  private fireCannons(): void {
+    for (const cannon of this.cannons) {
+      if (!cannon.active || cannon.aiming) continue;
+      if (this.time < cannon.nextShotAt) continue;
+      const { x, y } = muzzle(cannon);
+      const ball = this.addBall(x, y);
+      ball.body.setLinearVelocity(toMetres(launchVelocity(cannon)));
+      cannon.nextShotAt = this.time + CANNON_INTERVAL;
+      this.onFire(cannon);
+    }
   }
 
   // --- Goal cups ---
@@ -359,6 +418,7 @@ export class Playground {
     for (const bubble of this.bubbles) this.world.destroyBody(bubble.body);
     for (const cup of this.cups) this.world.destroyBody(cup.body);
     this.cups.length = 0;
+    this.cannons.length = 0;
     this.lines.length = 0;
     this.balls.length = 0;
     this.bubbles.length = 0;

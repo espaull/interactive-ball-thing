@@ -2,7 +2,8 @@ import "./style.css";
 import { Camera } from "./camera";
 import { Effects } from "./render/effects";
 import { render } from "./render/render";
-import { playCheer, playPop, playPortal } from "./sound";
+import { playCheer, playPop, playPortal, playThump } from "./sound";
+import { muzzle } from "./world/cannons";
 import { PORTAL_RADIUS_PX } from "./world/portals";
 import { createToolGroups } from "./tools";
 import { Input } from "./tools/input";
@@ -29,6 +30,13 @@ const input = new Input(canvas, playground, camera, toolGroups[0][0]);
 playground.onPop = (x, y, radius) => {
   effects.pop(x, y, radius);
   playPop(radius);
+};
+
+// A cannon firing: a grey puff at the muzzle, and a thump.
+playground.onFire = (cannon) => {
+  const { x, y } = muzzle(cannon);
+  effects.flash(x, y, 12, "#94a3b8");
+  playThump();
 };
 
 // A ball in a cup: confetti and a cheer.

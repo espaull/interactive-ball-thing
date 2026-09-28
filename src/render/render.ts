@@ -7,6 +7,7 @@ import type { Point } from "../geometry/point";
 import { ACCENT, ERASER_COLOR, LINE_COLOR, PREVIEW_COLOR } from "../palette";
 import { drawBoostStrip } from "./boost";
 import { drawBubble } from "./bubble";
+import { drawCannon } from "./cannon";
 import { drawCup } from "./cup";
 import { drawPortal } from "./portal";
 
@@ -59,6 +60,7 @@ export function render(
     eraser,
     boostPreview,
     portalPending,
+    trajectory,
   } = overlay;
   const time = performance.now() / 1000;
   ctx.save();
@@ -133,6 +135,23 @@ export function render(
   }
   if (portalPending) {
     drawPortal(ctx, portalPending.point, portalPending.color, time, 0.5);
+  }
+
+  // Cannons, and the path a cannon being aimed will send its balls.
+  for (const cannon of playground.cannons) drawCannon(ctx, cannon);
+  if (trajectory) {
+    ctx.fillStyle = `${ACCENT}cc`;
+    trajectory.forEach((p, i) => {
+      ctx.beginPath();
+      ctx.arc(
+        p.x,
+        p.y,
+        Math.max(1.5, 3.5 - i * 0.08) / camera.zoom,
+        0,
+        Math.PI * 2,
+      );
+      ctx.fill();
+    });
   }
 
   for (const ball of playground.balls) {

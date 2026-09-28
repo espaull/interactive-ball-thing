@@ -77,6 +77,7 @@ export class Input {
       eraser: null,
       boostPreview: null,
       portalPending: null,
+      trajectory: null,
       ...this.tool.overlay?.(hover),
     };
   }

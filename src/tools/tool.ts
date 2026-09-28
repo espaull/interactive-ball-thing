@@ -18,6 +18,8 @@ export interface Overlay {
   boostPreview: Point[] | null;
   // The first portal of a pair, waiting for its partner.
   portalPending: { point: Point; color: string } | null;
+  // Where a cannon being aimed will send its balls.
+  trajectory: Point[] | null;
 }
 
 // What the tools share.
