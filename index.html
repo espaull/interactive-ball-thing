@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>Ball Playground</title>
+  </head>
+  <body>
+    <canvas id="stage"></canvas>
+    <nav id="toolbar">
+      <button data-tool="pencil" class="active" title="Draw freehand lines">✏️<span>Draw</span></button>
+      <button data-tool="curve" title="Click points to make a smooth curve">〰️<span>Curve</span></button>
+      <button data-tool="eraser" title="Rub out parts of lines">🧽<span>Erase</span></button>
+      <button data-tool="move" title="Drag to look around, tap a ball to follow it">✋<span>Move</span></button>
+      <button data-tool="ball" title="Tap to drop a ball">⚽<span>Ball</span></button>
+      <button data-tool="bubble" title="Tap to blow a bubble">🫧<span>Bubble</span></button>
+      <span class="divider"></span>
+      <button id="follow" title="Camera follows the ball">🎥<span>Follow</span></button>
+      <button id="home" title="Back to the start">🏠<span>Home</span></button>
+      <button id="clear" title="Clear everything">🗑️<span>Clear</span></button>
+    </nav>
+    <p id="hint"></p>
+    <button id="bg-button" title="Change the background">🎨</button>
+    <div id="bg-picker" hidden></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
