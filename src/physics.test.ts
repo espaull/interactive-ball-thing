@@ -122,8 +122,10 @@ describe("bubbles", () => {
 
   it("each count a bump when two collide", () => {
     const pg = new Playground();
-    const left = pg.addBubble(200, 400);
-    const right = pg.addBubble(600, 400);
+    // Close enough that air drag can't stop them before they meet, whatever
+    // size they come out.
+    const left = pg.addBubble(300, 400);
+    const right = pg.addBubble(500, 400);
     left.body.setLinearVelocity({ x: 4, y: 0 });
     right.body.setLinearVelocity({ x: -4, y: 0 });
     run(pg, 1.5);

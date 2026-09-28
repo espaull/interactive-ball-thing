@@ -3,7 +3,8 @@ import { BACKGROUNDS, makeTile } from "./backgrounds";
 import { Camera } from "./camera";
 import { Effects } from "./effects";
 import { Playground } from "./physics";
-import { Input, type Tool } from "./input";
+import { createTools } from "./tools";
+import { Input } from "./tools/input";
 import { render } from "./render";
 import { playPop } from "./sound";
 
@@ -15,7 +16,8 @@ const ctx = canvas.getContext("2d")!;
 const playground = new Playground();
 const camera = new Camera();
 const effects = new Effects();
-const input = new Input(canvas, playground, camera);
+const tools = createTools(playground, camera);
+const input = new Input(canvas, playground, camera, tools);
 
 // However a bubble pops (clicked, or bumped too often): splash and sound.
 playground.onPop = (x, y, radius) => {
@@ -41,39 +43,29 @@ new ResizeObserver(resize).observe(canvas);
 window.addEventListener("resize", resize);
 resize();
 
-// Toolbar
+// Toolbar: one button per tool, before the divider.
 // Touchscreens have no Space key or Enter, so they get simpler hints.
 const TOUCH = window.matchMedia("(hover: none)").matches;
-const HINTS: Record<Tool, string> = TOUCH
-  ? {
-      pencil: "Drag to draw · start or finish on a ring to join lines up · tap bubbles to pop them",
-      eraser: "Drag over lines to rub them out",
-      curve: "Tap to add points · tap the last point again, or a ring, to finish",
-      move: "Drag to look around · tap a ball or bubble to follow it",
-      ball: "Tap to drop a ball · tap bubbles to pop them",
-      bubble: "Tap to blow a bubble · tap one to pop it",
-    }
-  : {
-      pencil: "Drag to draw · start or finish on a ring to join lines up · click bubbles to pop them · hold Space and drag to move around",
-      eraser: "Drag over lines to rub them out · the cut ends get rings you can draw from",
-      curve: "Click to add points · click the last point again, a ring, or press Enter to finish · Backspace undoes a point · Esc cancels",
-      move: "Drag to look around · tap a ball or bubble to follow it",
-      ball: "Click to drop a ball · click bubbles to pop them · hold Space and drag to move around",
-      bubble: "Click to blow a bubble · click one to pop it · hold Space and drag to move around",
-    };
 const hint = document.querySelector<HTMLElement>("#hint")!;
-const toolButtons = document.querySelectorAll<HTMLButtonElement>("[data-tool]");
+const divider = document.querySelector("#toolbar .divider")!;
+const toolButtons = tools.map((tool) => {
+  const button = document.createElement("button");
+  button.title = tool.title;
+  button.append(tool.icon);
+  const label = document.createElement("span");
+  label.textContent = tool.label;
+  button.append(label);
+  button.addEventListener("click", () => selectTool(tool));
+  divider.before(button);
+  return button;
+});
 
-function selectTool(tool: Tool): void {
+function selectTool(tool: (typeof tools)[number]): void {
   input.setTool(tool);
-  for (const b of toolButtons) b.classList.toggle("active", b.dataset.tool === tool);
-  hint.textContent = HINTS[tool];
+  toolButtons.forEach((b, i) => b.classList.toggle("active", tools[i] === tool));
+  hint.textContent = TOUCH ? tool.hints.touch : tool.hints.mouse;
 }
-
-for (const button of toolButtons) {
-  button.addEventListener("click", () => selectTool(button.dataset.tool as Tool));
-}
-selectTool("pencil");
+selectTool(tools[0]);
 
 // Keep focus off the buttons, so Space and Enter never "press" one.
 for (const el of document.querySelectorAll("#toolbar, #bg-button, #bg-picker")) {
@@ -121,7 +113,7 @@ followButton.addEventListener("click", () => {
 
 document.querySelector("#home")!.addEventListener("click", () => camera.home());
 document.querySelector("#clear")!.addEventListener("click", () => {
-  input.cancelCurve();
+  input.cancel();
   playground.clear();
   effects.clear();
   camera.home();

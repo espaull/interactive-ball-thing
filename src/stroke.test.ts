@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Point } from "./simplify";
-import { smoothStroke, splitTail } from "./stroke";
+import { curveShape, freehandShape, joinShape, smoothStroke, splitTail } from "./stroke";
 
 // Small repeatable random numbers, so tests don't change between runs.
 function seeded(seed: number): () => number {
@@ -71,5 +71,47 @@ describe("splitTail", () => {
   it("uses the whole line when it's shorter than the blend", () => {
     const short = [{ x: 0, y: 0 }, { x: 10, y: 0 }];
     expect(splitTail(short)).toEqual({ head: [], tail: short });
+  });
+});
+
+describe("joinShape", () => {
+  // Two lines along y=0 with a 60px gap between x=200 and x=260.
+  const left = Array.from({ length: 34 }, (_, i) => ({ x: i * 6, y: 0 })).filter((p) => p.x <= 200);
+  const right = Array.from({ length: 34 }, (_, i) => ({ x: 260 + i * 6, y: 0 }));
+  // Both passed "ending at the joined end": left ends at x=200 already,
+  // right is reversed so it ends at x=260.
+  const leftEnd = left.at(-1)!;
+  const rightEnd = right[0];
+  const rightEndingAtJoin = [...right].reverse();
+
+  it("bridges two lines into one running from end to end", () => {
+    const stroke = [leftEnd, { x: 220, y: 3 }, { x: 240, y: -3 }, rightEnd];
+    const shape = joinShape(stroke, left, rightEndingAtJoin, freehandShape);
+    expect(shape[0]).toEqual(left[0]);
+    expect(shape.at(-1)).toEqual(right.at(-1));
+    // Nothing strays far from the straight line it's bridging.
+    for (const p of shape) expect(Math.abs(p.y)).toBeLessThan(3);
+  });
+
+  it("smooths the corner where a new line turns away", () => {
+    // Carry on from the left line's end, heading 45° down.
+    const stroke = Array.from({ length: 20 }, (_, i) => ({ x: 200 + i * 5, y: i * 5 }));
+    const shape = joinShape(stroke, left, null, freehandShape);
+    expect(shape[0]).toEqual(left[0]);
+    expect(sharpestBend(shape)).toBeLessThan(20);
+  });
+
+  it("joins a curve through the joined end, and spreads the turn out", () => {
+    // A hairpin: the curve heads back up from the left line's end.
+    const clicks = [leftEnd, { x: 220, y: -60 }, { x: 150, y: -90 }];
+    const shape = joinShape(clicks, left, null, curveShape);
+    const throughJoin = Math.min(...shape.map((p) => Math.hypot(p.x - leftEnd.x, p.y - leftEnd.y)));
+    expect(throughJoin).toBeLessThan(0.01);
+    expect(sharpestBend(shape)).toBeLessThan(25);
+  });
+
+  it("is just the built shape when there's nothing to join", () => {
+    const stroke = [{ x: 0, y: 0 }, { x: 30, y: 10 }, { x: 60, y: 0 }];
+    expect(joinShape(stroke, null, null, freehandShape)).toEqual(freehandShape(stroke, [], []));
   });
 });

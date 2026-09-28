@@ -1,0 +1,58 @@
+import type { Camera } from "../camera";
+import type { Line, LineEnd, Playground } from "../physics";
+import type { Point } from "../simplify";
+
+// Everything drawn on top of the world to show what the tools are doing.
+export interface Overlay {
+  // The line being drawn, in grey.
+  preview: Point[] | null;
+  // Points placed with the Curve tool.
+  curveHandles: Point[] | null;
+  // Ends of existing lines that a new line can join onto.
+  lineEnds: Point[] | null;
+  // The ends that will be (or are being) joined.
+  snapTargets: Point[];
+  // The eraser's circle, in world pixels.
+  eraser: { x: number; y: number; radius: number } | null;
+}
+
+// What the tools share.
+export interface ToolContext {
+  playground: Playground;
+  camera: Camera;
+  // The end of a line (other than `except`) close enough to `p` to join onto.
+  findSnap(p: Point, except?: Line): LineEnd | null;
+}
+
+// What a press on the canvas starts: a drag the tool handles itself, panning
+// the view, or nothing more.
+export type DownResult = "drag" | "pan" | "none";
+
+// One toolbar tool. Points are in world pixels. `Input` handles the shared
+// plumbing (pointer capture, panning, zooming, keys, popping bubbles) and
+// passes the rest on to the selected tool.
+export interface Tool {
+  // Toolbar button.
+  label: string;
+  icon: string;
+  title: string;
+  cursor: string;
+  // Shown at the bottom of the screen while the tool is selected.
+  hints: { mouse: string; touch: string };
+  // Tapping a bubble with this tool pops it instead of using the tool.
+  popsBubbles: boolean;
+  // True while the tool is part-way through something, so the camera holds still.
+  readonly busy: boolean;
+
+  down(p: Point): DownResult;
+  // While dragging (after `down` returned "drag").
+  move?(p: Point): void;
+  up?(): void;
+  key?(key: string): void;
+  // Switching to another tool: finish off anything half-done.
+  deactivate?(): void;
+  // Throw away anything half-done (used by Clear).
+  cancel?(): void;
+  // `hover` is where the pointer is (null when it's off the canvas or panning).
+  overlay?(hover: Point | null): Partial<Overlay>;
+}

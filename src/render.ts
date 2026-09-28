@@ -1,7 +1,7 @@
 import { getPattern, type Background } from "./backgrounds";
 import type { Camera } from "./camera";
 import type { Effects } from "./effects";
-import type { Overlay } from "./input";
+import type { Overlay } from "./tools";
 import { PX_PER_M, type Playground } from "./physics";
 import type { Point } from "./simplify";
 
