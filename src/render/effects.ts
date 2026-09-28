@@ -1,4 +1,4 @@
-import { BUBBLE_COLORS } from "../palette";
+import { BALL_COLORS, BUBBLE_COLORS } from "../palette";
 
 // Purely visual particles (not physics bodies), in world pixels.
 interface Droplet {
@@ -22,6 +22,21 @@ interface Ring {
   life: number;
 }
 
+// A scrap of confetti: a little spinning rectangle.
+interface Confetti {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  angle: number;
+  spin: number;
+  color: string;
+  age: number;
+  life: number;
+}
+
+const CONFETTI_GRAVITY = 500; // px/s²
+
 const DROPLET_GRAVITY = 300; // px/s², a light fall so the spray arcs
 const RING_LIFE = 0.18;
 const RING_GROWTH = 0.6; // grows to 1.6× the bubble's size
@@ -29,6 +44,7 @@ const RING_GROWTH = 0.6; // grows to 1.6× the bubble's size
 export class Effects {
   readonly droplets: Droplet[] = [];
   readonly rings: Ring[] = [];
+  readonly confetti: Confetti[] = [];
 
   pop(x: number, y: number, radius: number): void {
     this.rings.push({
@@ -64,7 +80,34 @@ export class Effects {
     this.rings.push({ x, y, radius, color, age: 0, life: RING_LIFE * 1.5 });
   }
 
+  // A burst of confetti shooting up out of (x, y), e.g. from a goal cup.
+  celebrate(x: number, y: number): void {
+    for (let i = 0; i < 30; i++) {
+      const angle = -Math.PI / 2 + (Math.random() - 0.5) * 1.6;
+      const speed = 200 + Math.random() * 250;
+      this.confetti.push({
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        angle: Math.random() * Math.PI,
+        spin: (Math.random() - 0.5) * 20,
+        color: BALL_COLORS[i % BALL_COLORS.length],
+        age: 0,
+        life: 0.9 + Math.random() * 0.5,
+      });
+    }
+  }
+
   update(dt: number): void {
+    for (const c of this.confetti) {
+      c.age += dt;
+      c.vy += CONFETTI_GRAVITY * dt;
+      c.x += c.vx * dt;
+      c.y += c.vy * dt;
+      c.angle += c.spin * dt;
+    }
+    removeExpired(this.confetti);
     for (const d of this.droplets) {
       d.age += dt;
       d.vy += DROPLET_GRAVITY * dt;
@@ -78,6 +121,7 @@ export class Effects {
 
   clear(): void {
     this.droplets.length = 0;
+    this.confetti.length = 0;
     this.rings.length = 0;
   }
 
@@ -98,6 +142,16 @@ export class Effects {
       ctx.beginPath();
       ctx.arc(d.x, d.y, d.radius * (1 - t * 0.5), 0, Math.PI * 2);
       ctx.fill();
+    }
+    for (const c of this.confetti) {
+      // Fades out only at the very end.
+      ctx.globalAlpha = Math.min(1, (c.life - c.age) * 4);
+      ctx.fillStyle = c.color;
+      ctx.save();
+      ctx.translate(c.x, c.y);
+      ctx.rotate(c.angle);
+      ctx.fillRect(-4, -2, 8, 4);
+      ctx.restore();
     }
     ctx.globalAlpha = 1;
   }

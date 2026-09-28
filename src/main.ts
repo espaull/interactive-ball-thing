@@ -2,7 +2,7 @@ import "./style.css";
 import { Camera } from "./camera";
 import { Effects } from "./render/effects";
 import { render } from "./render/render";
-import { playPop, playPortal } from "./sound";
+import { playCheer, playPop, playPortal } from "./sound";
 import { PORTAL_RADIUS_PX } from "./world/portals";
 import { createToolGroups } from "./tools";
 import { Input } from "./tools/input";
@@ -29,6 +29,12 @@ const input = new Input(canvas, playground, camera, toolGroups[0][0]);
 playground.onPop = (x, y, radius) => {
   effects.pop(x, y, radius);
   playPop(radius);
+};
+
+// A ball in a cup: confetti and a cheer.
+playground.onCatch = (cup) => {
+  effects.celebrate(cup.x, cup.y - 10);
+  playCheer();
 };
 
 // Going through a portal: a flash at both ends, and a whoop.

@@ -11,13 +11,13 @@ const RADIUS_PX = 18;
 export class EraserTool implements Tool {
   label = "Erase";
   icon = "🧽";
-  title = "Rub out lines, boosts, portals and balls";
+  title = "Rub out lines, boosts, portals, cups and balls";
   cursor = "none"; // the eraser's circle is drawn instead
   hints = {
     mouse:
-      "Drag over lines, boosts and portals to rub them out · click a ball to remove it · the cut ends get rings you can draw from",
+      "Drag over lines, boosts, portals and cups to rub them out · click a ball to remove it · the cut ends get rings you can draw from",
     touch:
-      "Drag over lines, boosts and portals to rub them out · tap a ball to remove it",
+      "Drag over lines, boosts, portals and cups to rub them out · tap a ball to remove it",
   };
   popsBubbles = true;
 

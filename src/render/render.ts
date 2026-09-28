@@ -7,6 +7,7 @@ import type { Point } from "../geometry/point";
 import { ACCENT, ERASER_COLOR, LINE_COLOR, PREVIEW_COLOR } from "../palette";
 import { drawBoostStrip } from "./boost";
 import { drawBubble } from "./bubble";
+import { drawCup } from "./cup";
 import { drawPortal } from "./portal";
 
 const LINE_WIDTH_PX = 4;
@@ -122,6 +123,8 @@ export function render(
       ctx.fill();
     });
   }
+
+  for (const cup of playground.cups) drawCup(ctx, cup);
 
   // Portals go under the balls, so balls look like they drop in.
   for (const pair of playground.portalPairs) {

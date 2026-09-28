@@ -57,3 +57,28 @@ export function playPortal(): void {
   osc.start(now);
   osc.stop(now + 0.2);
 }
+
+// A cheerful rising three-note "ta-da" for a ball landing in a cup.
+export function playCheer(): void {
+  const ctx = getAudio();
+  if (!ctx) return;
+
+  const now = ctx.currentTime;
+  // C, E, G, one after another.
+  [523, 659, 784].forEach((pitch, i) => {
+    const start = now + i * 0.09;
+    const osc = ctx.createOscillator();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(pitch, start);
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(0.15, start + 0.01);
+    gain.gain.exponentialRampToValueAtTime(
+      0.0001,
+      start + (i === 2 ? 0.35 : 0.12),
+    );
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(start);
+    osc.stop(start + 0.4);
+  });
+}

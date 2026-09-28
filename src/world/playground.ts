@@ -4,11 +4,13 @@ import type { Point } from "../geometry/point";
 import { BALL_COLORS } from "../palette";
 import { BOOST_ACCELERATION, BOOST_MAX_SPEED, BoostZone } from "./boosts";
 import { Crossings } from "./crossings";
+import { CUP_RADIUS_PX, Cup, createCup } from "./cups";
 import { Portals, type PortalPair, type Teleport } from "./portals";
 import { Bubble, BubbleBehaviour, createBubble } from "./bubbles";
 import { PX_PER_M, toMetres, toPixels } from "./units";
 
 export { BoostZone } from "./boosts";
+export { Cup } from "./cups";
 export type { PortalPair, Teleport } from "./portals";
 export { Bubble } from "./bubbles";
 
@@ -73,6 +75,7 @@ export class Playground {
   readonly balls: Ball[] = [];
   readonly bubbles: Bubble[] = [];
   readonly boosts: BoostZone[] = [];
+  readonly cups: Cup[] = [];
   // Highest and lowest points of any drawn line, in pixels.
   private highestLineY = Infinity;
   private lowestLineY = -Infinity;
@@ -92,6 +95,8 @@ export class Playground {
   onPop: (x: number, y: number, radius: number) => void = () => {};
   // Called whenever something goes through a portal, for the effects.
   onTeleport: (teleport: Teleport) => void = () => {};
+  // Called whenever a cup catches a ball, for the celebration.
+  onCatch: (cup: Cup) => void = () => {};
 
   private portals = new Portals();
 
@@ -116,6 +121,7 @@ export class Playground {
     for (const teleport of this.portals.teleport(things)) {
       this.onTeleport(teleport);
     }
+    this.catchBalls();
   }
 
   // --- Lines ---
@@ -159,6 +165,13 @@ export class Playground {
     }
     // A portal it touches goes, along with its partner.
     this.portals.removeNear(x, y, radius);
+    // So does any cup it touches.
+    for (const cup of [...this.cups]) {
+      if (Math.hypot(cup.x - x, cup.y - y) < radius + CUP_RADIUS_PX) {
+        this.world.destroyBody(cup.body);
+        this.cups.splice(this.cups.indexOf(cup), 1);
+      }
+    }
     // Balls it touches go too (handy for one stuck on a track).
     for (const ball of [...this.balls]) {
       const { x: bx, y: by } = ball.position;
@@ -247,6 +260,26 @@ export class Playground {
     this.portals.add({ a, b, color });
   }
 
+  // --- Goal cups ---
+
+  addCup(x: number, y: number): Cup {
+    const cup = createCup(this.world, x, y);
+    this.cups.push(cup);
+    return cup;
+  }
+
+  // Balls that have dropped into a cup are caught: removed and counted.
+  private catchBalls(): void {
+    if (this.cups.length === 0) return;
+    for (const ball of [...this.balls]) {
+      const cup = this.cups.find((c) => c.catches(ball.position));
+      if (!cup) continue;
+      this.removeBall(ball);
+      cup.caught++;
+      this.onCatch(cup);
+    }
+  }
+
   // --- Balls and bubbles ---
 
   addBall(x: number, y: number): Ball {
@@ -324,6 +357,8 @@ export class Playground {
     for (const line of this.lines) this.world.destroyBody(line.body);
     for (const ball of this.balls) this.world.destroyBody(ball.body);
     for (const bubble of this.bubbles) this.world.destroyBody(bubble.body);
+    for (const cup of this.cups) this.world.destroyBody(cup.body);
+    this.cups.length = 0;
     this.lines.length = 0;
     this.balls.length = 0;
     this.bubbles.length = 0;

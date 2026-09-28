@@ -46,3 +46,7 @@ export const PORTAL_COLORS = [
   "#3b82f6",
   "#84cc16",
 ];
+
+// Goal cups: gold, with a lighter shine.
+export const CUP_COLOR = "#f59e0b";
+export const CUP_SHINE = "#fde68a";

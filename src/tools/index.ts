@@ -1,6 +1,7 @@
 import type { Camera } from "../camera";
 import type { Playground } from "../world/playground";
 import { BoostTool } from "./boost";
+import { CupTool } from "./cup";
 import { CurveTool } from "./curve";
 import { EraserTool } from "./eraser";
 import { MoveTool } from "./move";
@@ -31,7 +32,7 @@ export function createToolGroups(
   return [
     [new PencilTool(ctx), new CurveTool(ctx)],
     [new EraserTool(ctx)],
-    [new BoostTool(ctx), new PortalTool(ctx)],
+    [new BoostTool(ctx), new PortalTool(ctx), new CupTool(ctx)],
     [new MoveTool(ctx)],
     [new BallTool(ctx), new BubbleTool(ctx)],
   ];
