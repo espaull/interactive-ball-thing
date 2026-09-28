@@ -7,7 +7,6 @@ import type { Overlay, Tool } from "./tool";
 // every tool shares (panning, zooming, popping bubbles, pointer capture) and
 // passes the rest to the selected tool.
 export class Input {
-  tool: Tool;
   // Where the pointer is, in screen pixels, or null when it's off the canvas.
   private hover: Point | null = null;
   private pointerId: number | null = null;
@@ -22,9 +21,9 @@ export class Input {
     private canvas: HTMLCanvasElement,
     private playground: Playground,
     private camera: Camera,
-    tools: Tool[],
+    // The tool selected to begin with.
+    public tool: Tool,
   ) {
-    this.tool = tools[0];
     canvas.addEventListener("pointerdown", this.onDown);
     canvas.addEventListener("pointermove", this.onMove);
     canvas.addEventListener("pointerup", this.onUp);

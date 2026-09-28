@@ -14,9 +14,13 @@ export type { Overlay, Tool } from "./tool";
 // line's end joins onto that line.
 const SNAP_RADIUS_PX = 20;
 
-// Every tool, in toolbar order. To add a tool, write a class implementing
-// `Tool` and add it here; the toolbar button is made from it.
-export function createTools(playground: Playground, camera: Camera): Tool[] {
+// The tools, in toolbar groups. Each group is one toolbar button; a group
+// with several tools opens a menu of them. To add a tool, write a class
+// implementing `Tool` and add it to a group here.
+export function createToolGroups(
+  playground: Playground,
+  camera: Camera,
+): Tool[][] {
   const ctx: ToolContext = {
     playground,
     camera,
@@ -24,12 +28,10 @@ export function createTools(playground: Playground, camera: Camera): Tool[] {
       playground.lineEndAt(p.x, p.y, SNAP_RADIUS_PX / camera.zoom, except),
   };
   return [
-    new PencilTool(ctx),
-    new CurveTool(ctx),
-    new BoostTool(ctx),
-    new EraserTool(ctx),
-    new MoveTool(ctx),
-    new BallTool(ctx),
-    new BubbleTool(ctx),
+    [new PencilTool(ctx), new CurveTool(ctx)],
+    [new EraserTool(ctx)],
+    [new BoostTool(ctx)],
+    [new MoveTool(ctx)],
+    [new BallTool(ctx), new BubbleTool(ctx)],
   ];
 }

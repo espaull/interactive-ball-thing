@@ -3,7 +3,7 @@ import { Camera } from "./camera";
 import { Effects } from "./render/effects";
 import { render } from "./render/render";
 import { playPop } from "./sound";
-import { createTools } from "./tools";
+import { createToolGroups } from "./tools";
 import { Input } from "./tools/input";
 import {
   keepFocusOffButtons,
@@ -21,8 +21,8 @@ const ctx = canvas.getContext("2d")!;
 const playground = new Playground();
 const camera = new Camera();
 const effects = new Effects();
-const tools = createTools(playground, camera);
-const input = new Input(canvas, playground, camera, tools);
+const toolGroups = createToolGroups(playground, camera);
+const input = new Input(canvas, playground, camera, toolGroups[0][0]);
 
 // However a bubble pops (clicked, or bumped too often): splash and sound.
 playground.onPop = (x, y, radius) => {
@@ -31,7 +31,7 @@ playground.onPop = (x, y, radius) => {
 };
 
 keepFocusOffButtons();
-setupToolbar(tools, input);
+setupToolbar(toolGroups, input);
 setupActions(camera, playground, input, effects);
 const background = setupBackgroundPicker(canvas);
 

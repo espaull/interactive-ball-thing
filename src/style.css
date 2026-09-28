@@ -34,7 +34,8 @@ body {
   user-select: none;
 }
 
-#toolbar button {
+#toolbar button,
+#tool-menu button {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -49,19 +50,38 @@ body {
   cursor: pointer;
 }
 
-#toolbar button span {
+#toolbar button span,
+#tool-menu button span {
   font-size: 14px;
   font-weight: 600;
   color: #444;
 }
 
-#toolbar button:hover {
+#toolbar button:hover,
+#tool-menu button:hover {
   background: #e8e5da;
 }
 
-#toolbar button.active {
+#toolbar button.active,
+#tool-menu button.active {
   border-color: #3b82f6;
   background: #dbeafe;
+}
+
+/* The menu a group button opens, just below it. */
+#tool-menu {
+  position: fixed;
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  background: #ffffffee;
+  border-radius: 18px;
+  box-shadow: 0 4px 16px #0003;
+  user-select: none;
+}
+
+#tool-menu[hidden] {
+  display: none;
 }
 
 #toolbar .divider {
@@ -77,20 +97,33 @@ body {
     gap: 3px;
     padding: 5px;
   }
-  #toolbar button {
+  #toolbar button,
+  #tool-menu button {
     min-width: 0;
     padding: 5px 4px;
     font-size: 20px;
     border-width: 2px;
   }
-  #toolbar button span {
+  #toolbar button span,
+  #tool-menu button span {
     font-size: 10px;
   }
 }
 
-/* Phones: two rows. The divider becomes a line break, so the tools sit on
-   top and Follow/Home/Clear go underneath. */
-@media (max-width: 520px) {
+/* Phones: tighter spacing keeps the toolbar on one row. */
+@media (max-width: 420px) {
+  #toolbar {
+    gap: 2px;
+    padding: 4px;
+  }
+  #toolbar .divider {
+    margin: 6px 1px;
+  }
+}
+
+/* The smallest phones: two rows. The divider becomes a line break, so the
+   tools sit on top and Follow/Home/Clear go underneath. */
+@media (max-width: 360px) {
   #toolbar {
     flex-wrap: wrap;
     justify-content: center;
