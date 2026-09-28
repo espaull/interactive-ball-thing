@@ -3,6 +3,7 @@ import { erasePolyline } from "../geometry/erase";
 import type { Point } from "../geometry/point";
 import { BALL_COLORS } from "../palette";
 import { BOOST_ACCELERATION, BOOST_MAX_SPEED, BoostZone } from "./boosts";
+import { Crossings } from "./crossings";
 import { Bubble, BubbleBehaviour, createBubble } from "./bubbles";
 import { PX_PER_M, toMetres, toPixels } from "./units";
 
@@ -75,6 +76,11 @@ export class Playground {
   private lowestLineY = -Infinity;
   private time = 0;
   private lineBodies = new Set<Body>();
+  // Lets balls pass through the places where a line crosses itself.
+  private crossings = new Crossings(
+    this.world,
+    (body) => this.lines.find((line) => line.body === body)?.points,
+  );
   private bubbleBehaviour = new BubbleBehaviour(this.world, (body) =>
     this.lineBodies.has(body),
   );
@@ -293,6 +299,7 @@ export class Playground {
     this.bubbles.length = 0;
     this.boosts.length = 0;
     this.bubbleBehaviour.clear();
+    this.crossings.clear();
     this.lineBodies.clear();
     this.lowestLineY = -Infinity;
     this.highestLineY = Infinity;
