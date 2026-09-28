@@ -1,5 +1,5 @@
 import type { Camera } from "../camera";
-import type { Playground } from "../physics";
+import type { Playground } from "../world/playground";
 import { CurveTool } from "./curve";
 import { EraserTool } from "./eraser";
 import { MoveTool } from "./move";

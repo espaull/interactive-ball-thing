@@ -1,4 +1,4 @@
-import { PX_PER_M, type Playground, type Thing } from "./physics";
+import type { Playground, Thing } from "./world/playground";
 import type { Point } from "./simplify";
 
 const MIN_ZOOM = 0.25;
@@ -78,11 +78,11 @@ export class Camera {
       this.target = null;
       return;
     }
-    const pos = this.target.body.getPosition();
+    const pos = this.target.position;
     // Frame-rate independent smoothing.
     const t = 1 - Math.exp(-FOLLOW_SPEED * dt);
-    this.x += (pos.x * PX_PER_M - this.x) * t;
-    this.y += (pos.y * PX_PER_M - this.y) * t;
+    this.x += (pos.x - this.x) * t;
+    this.y += (pos.y - this.y) * t;
   }
 
   apply(ctx: CanvasRenderingContext2D): void {

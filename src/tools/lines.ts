@@ -1,5 +1,5 @@
 // Shared by the tools that make lines (Draw and Curve).
-import type { LineEnd, Playground } from "../physics";
+import type { LineEnd, Playground } from "../world/playground";
 import type { Point } from "../simplify";
 import { joinShape, type ShapeBuilder } from "../stroke";
 import type { ToolContext } from "./tool";

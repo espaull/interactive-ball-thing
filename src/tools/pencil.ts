@@ -1,4 +1,4 @@
-import type { LineEnd } from "../physics";
+import type { LineEnd } from "../world/playground";
 import type { Point } from "../simplify";
 import { freehandShape, smoothStroke } from "../stroke";
 import { commitLine, lineEnds } from "./lines";

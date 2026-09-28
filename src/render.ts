@@ -2,7 +2,7 @@ import { getPattern, type Background } from "./backgrounds";
 import type { Camera } from "./camera";
 import type { Effects } from "./effects";
 import type { Overlay } from "./tools";
-import { PX_PER_M, type Playground } from "./physics";
+import type { Playground } from "./world/playground";
 import type { Point } from "./simplify";
 
 const LINE_WIDTH_PX = 4;
@@ -93,10 +93,8 @@ export function render(
   }
 
   for (const ball of playground.balls) {
-    const pos = ball.body.getPosition();
-    const angle = ball.body.getAngle();
-    const x = pos.x * PX_PER_M;
-    const y = pos.y * PX_PER_M;
+    const { x, y } = ball.position;
+    const angle = ball.angle;
 
     ctx.fillStyle = ball.color;
     ctx.beginPath();
@@ -116,9 +114,7 @@ export function render(
   // Bubbles go on top, since you can see through them.
   const time = performance.now() / 1000;
   for (const bubble of playground.bubbles) {
-    const pos = bubble.body.getPosition();
-    const x = pos.x * PX_PER_M;
-    const y = pos.y * PX_PER_M;
+    const { x, y } = bubble.position;
     // A quick squash-and-stretch after each bump, dying away in ~0.3s.
     const age = playground.now - bubble.lastHitAt;
     // (Never-bumped bubbles have an infinite age, and sin(Infinity) is NaN.)
@@ -134,11 +130,11 @@ export function render(
 
   // Ring around whatever the camera is following.
   if (camera.target) {
-    const pos = camera.target.body.getPosition();
+    const { x, y } = camera.target.position;
     ctx.strokeStyle = "#3b82f6";
     ctx.lineWidth = 3 / camera.zoom;
     ctx.beginPath();
-    ctx.arc(pos.x * PX_PER_M, pos.y * PX_PER_M, camera.target.radius + 6, 0, Math.PI * 2);
+    ctx.arc(x, y, camera.target.radius + 6, 0, Math.PI * 2);
     ctx.stroke();
   }
 

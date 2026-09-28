@@ -2,7 +2,7 @@ import "./style.css";
 import { BACKGROUNDS, makeTile } from "./backgrounds";
 import { Camera } from "./camera";
 import { Effects } from "./effects";
-import { Playground } from "./physics";
+import { Playground } from "./world/playground";
 import { createTools } from "./tools";
 import { Input } from "./tools/input";
 import { render } from "./render";

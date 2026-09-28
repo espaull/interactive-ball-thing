@@ -1,5 +1,5 @@
 import type { Camera } from "../camera";
-import type { Line, LineEnd, Playground } from "../physics";
+import type { Line, LineEnd, Playground } from "../world/playground";
 import type { Point } from "../simplify";
 
 // Everything drawn on top of the world to show what the tools are doing.

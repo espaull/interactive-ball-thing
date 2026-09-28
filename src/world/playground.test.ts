@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PX_PER_M, Playground } from "./physics";
+import { Playground } from "./playground";
 
 const STEP = 1 / 60;
 
@@ -51,7 +51,7 @@ describe("balls", () => {
     pg.addLine([{ x: 0, y: 400 }, { x: 800, y: 400 }]);
     const ball = pg.addBall(400, 100);
     run(pg, 3);
-    const bottom = ball.body.getPosition().y * PX_PER_M + ball.radius;
+    const bottom = ball.position.y + ball.radius;
     expect(bottom).toBeCloseTo(400, 0);
   });
 });
@@ -61,7 +61,7 @@ describe("bubbles", () => {
     const pg = new Playground();
     const bubble = pg.addBubble(400, 400);
     run(pg, 2);
-    expect(bubble.body.getPosition().y * PX_PER_M).toBeLessThan(350);
+    expect(bubble.position.y).toBeLessThan(350);
   });
 
   it("pop on their third bump", () => {
@@ -107,12 +107,12 @@ describe("bubbles", () => {
     const len = Math.hypot(c.x - a.x, c.y - a.y);
     const towardsSlope = { x: (c.y - a.y) / len, y: -(c.x - a.x) / len };
 
-    const start = bubble.body.getPosition().clone();
+    const start = bubble.position;
     run(pg, 4, () => {
       const push = bubble.body.getMass() * 10 * 0.6;
       bubble.body.applyForceToCenter({ x: towardsSlope.x * push, y: towardsSlope.y * push }, true);
     });
-    const slidPx = (start.y - bubble.body.getPosition().y) * PX_PER_M;
+    const slidPx = start.y - bubble.position.y;
 
     // Slid past many segments (each about 7px long)...
     expect(slidPx).toBeGreaterThan(100);

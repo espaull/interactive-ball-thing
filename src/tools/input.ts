@@ -1,5 +1,5 @@
 import type { Camera } from "../camera";
-import type { Playground } from "../physics";
+import type { Playground } from "../world/playground";
 import type { Point } from "../simplify";
 import type { Overlay, Tool } from "./tool";
 
