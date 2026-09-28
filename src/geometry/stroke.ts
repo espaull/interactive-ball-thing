@@ -1,5 +1,6 @@
-import { catmullRom } from "./curve";
-import { simplify, type Point } from "./simplify";
+import { catmullRom } from "./spline";
+import { distance, type Point } from "./point";
+import { simplify } from "./simplify";
 
 // How many neighbours on each side each point is averaged with. Freehand
 // points are at least 4px apart, so 3 smooths over roughly 25px.
@@ -41,7 +42,7 @@ export function splitTail(points: Point[]): { head: Point[]; tail: Point[] } {
   let length = 0;
   let i = points.length - 1;
   while (i > 0 && length < JOIN_BLEND_PX) {
-    length += Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+    length += distance(points[i], points[i - 1]);
     i--;
   }
   return { head: points.slice(0, i), tail: points.slice(i) };
@@ -51,13 +52,21 @@ export function splitTail(points: Point[]): { head: Point[]; tail: Point[] } {
 // lines, `lead` is the start line's last stretch (ending where `points`
 // begins) and `trail` is the finish line's first stretch (starting where
 // `points` finishes); both get re-shaped along with the new points.
-export type ShapeBuilder = (points: Point[], lead: Point[], trail: Point[]) => Point[];
+export type ShapeBuilder = (
+  points: Point[],
+  lead: Point[],
+  trail: Point[],
+) => Point[];
 
 // Freehand: smooth the raw points together with the blended stretches.
 export const freehandShape: ShapeBuilder = (points, lead, trail) =>
   // The lead ends where the points start, and the trail starts where they
   // finish, so drop the shared points.
-  smoothStroke([...lead, ...points.slice(lead.length > 0 ? 1 : 0), ...trail.slice(1)]);
+  smoothStroke([
+    ...lead,
+    ...points.slice(lead.length > 0 ? 1 : 0),
+    ...trail.slice(1),
+  ]);
 
 // Curve: a spline through the clicked points, anchored on the far ends of the
 // blended stretches (not every point of them), so turns into and out of the

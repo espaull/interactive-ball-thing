@@ -1,4 +1,4 @@
-import type { Point } from "./simplify";
+import type { Point } from "./point";
 
 // Minimum gap between output points; Box2D rejects chain vertices that are
 // nearly on top of each other.
@@ -26,7 +26,10 @@ export function catmullRom(points: Point[], spacing: number): Point[] {
   const ctrl = [
     { x: 2 * first.x - points[1].x, y: 2 * first.y - points[1].y },
     ...points,
-    { x: 2 * last.x - points[points.length - 2].x, y: 2 * last.y - points[points.length - 2].y },
+    {
+      x: 2 * last.x - points[points.length - 2].x,
+      y: 2 * last.y - points[points.length - 2].y,
+    },
   ];
 
   const out: Point[] = [first];

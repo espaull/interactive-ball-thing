@@ -11,7 +11,11 @@ export interface Background {
 
 // Draw a shape at the 9 positions around the tile, so anything poking over one
 // edge reappears on the opposite edge and the tile wraps without seams.
-function wrapped(ctx: CanvasRenderingContext2D, size: number, fn: () => void): void {
+function wrapped(
+  ctx: CanvasRenderingContext2D,
+  size: number,
+  fn: () => void,
+): void {
   for (const dx of [-size, 0, size]) {
     for (const dy of [-size, 0, size]) {
       ctx.save();
@@ -22,7 +26,12 @@ function wrapped(ctx: CanvasRenderingContext2D, size: number, fn: () => void): v
   }
 }
 
-function dot(ctx: CanvasRenderingContext2D, x: number, y: number, r: number): void {
+function dot(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  r: number,
+): void {
   ctx.beginPath();
   ctx.arc(x, y, r, 0, Math.PI * 2);
   ctx.fill();
@@ -37,7 +46,12 @@ function seeded(seed: number): () => number {
   };
 }
 
-function star(ctx: CanvasRenderingContext2D, x: number, y: number, r: number): void {
+function star(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  r: number,
+): void {
   ctx.beginPath();
   for (let i = 0; i < 10; i++) {
     const angle = -Math.PI / 2 + (i * Math.PI) / 5;

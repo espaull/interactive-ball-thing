@@ -1,6 +1,6 @@
 import type { LineEnd } from "../world/playground";
-import type { Point } from "../simplify";
-import { freehandShape, smoothStroke } from "../stroke";
+import type { Point } from "../geometry/point";
+import { freehandShape, smoothStroke } from "../geometry/stroke";
 import { commitLine, lineEnds } from "./lines";
 import type { DownResult, Overlay, Tool, ToolContext } from "./tool";
 
@@ -17,7 +17,8 @@ export class PencilTool implements Tool {
   hints = {
     mouse:
       "Drag to draw · start or finish on a ring to join lines up · click bubbles to pop them · hold Space and drag to move around",
-    touch: "Drag to draw · start or finish on a ring to join lines up · tap bubbles to pop them",
+    touch:
+      "Drag to draw · start or finish on a ring to join lines up · tap bubbles to pop them",
   };
   popsBubbles = true;
 
@@ -40,13 +41,17 @@ export class PencilTool implements Tool {
 
   move(p: Point): void {
     const last = this.stroke?.at(-1);
-    if (last && Math.hypot(p.x - last.x, p.y - last.y) >= MIN_POINT_SPACING_PX) {
+    if (
+      last &&
+      Math.hypot(p.x - last.x, p.y - last.y) >= MIN_POINT_SPACING_PX
+    ) {
       this.stroke!.push(p);
     }
   }
 
   up(): void {
-    if (this.stroke) commitLine(this.ctx, this.stroke, this.start, freehandShape);
+    if (this.stroke)
+      commitLine(this.ctx, this.stroke, this.start, freehandShape);
     this.cancel();
   }
 

@@ -1,4 +1,4 @@
-import { BUBBLE_COLORS } from "./render";
+import { BUBBLE_COLORS } from "../palette";
 
 // Purely visual particles (not physics bodies), in world pixels.
 interface Droplet {

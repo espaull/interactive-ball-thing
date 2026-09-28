@@ -1,6 +1,7 @@
 import { World, ChainShape, CircleShape, type Body } from "planck";
-import { erasePolyline } from "../erase";
-import type { Point } from "../simplify";
+import { erasePolyline } from "../geometry/erase";
+import type { Point } from "../geometry/point";
+import { BALL_COLORS } from "../palette";
 import { Bubble, BubbleBehaviour, createBubble } from "./bubbles";
 import { PX_PER_M, toMetres, toPixels } from "./units";
 
@@ -9,16 +10,6 @@ export { Bubble } from "./bubbles";
 const BALL_RADIUS_M = 0.4;
 const MAX_BALLS = 200;
 const MAX_BUBBLES = 100;
-const COLORS = [
-  "#ef4444",
-  "#f97316",
-  "#eab308",
-  "#22c55e",
-  "#06b6d4",
-  "#3b82f6",
-  "#a855f7",
-  "#ec4899",
-];
 
 export interface Line {
   body: Body;
@@ -54,10 +45,16 @@ export class Ball {
 export type Thing = Ball | Bubble;
 
 // The last (topmost) item in `list` within `slack` pixels of its edge.
-function findAt<T extends Thing>(list: T[], x: number, y: number, slack: number): T | null {
+function findAt<T extends Thing>(
+  list: T[],
+  x: number,
+  y: number,
+  slack: number,
+): T | null {
   for (let i = list.length - 1; i >= 0; i--) {
     const pos = list[i].position;
-    if (Math.hypot(pos.x - x, pos.y - y) <= list[i].radius + slack) return list[i];
+    if (Math.hypot(pos.x - x, pos.y - y) <= list[i].radius + slack)
+      return list[i];
   }
   return null;
 }
@@ -75,7 +72,9 @@ export class Playground {
   private lowestLineY = -Infinity;
   private time = 0;
   private lineBodies = new Set<Body>();
-  private bubbleBehaviour = new BubbleBehaviour(this.world, (body) => this.lineBodies.has(body));
+  private bubbleBehaviour = new BubbleBehaviour(this.world, (body) =>
+    this.lineBodies.has(body),
+  );
 
   // Called whenever a bubble pops (clicked or bumped too often), for the
   // splash and sound.
@@ -90,7 +89,8 @@ export class Playground {
     this.time += dt;
     this.bubbleBehaviour.beforeStep(this.time);
     this.world.step(dt, 8, 3);
-    for (const bubble of this.bubbleBehaviour.afterStep(this.time)) this.popBubble(bubble);
+    for (const bubble of this.bubbleBehaviour.afterStep(this.time))
+      this.popBubble(bubble);
   }
 
   // --- Lines ---
@@ -129,7 +129,12 @@ export class Playground {
 
   // The line end closest to a point, within `radius` pixels, ignoring the
   // ends of `except`.
-  lineEndAt(x: number, y: number, radius: number, except?: Line): LineEnd | null {
+  lineEndAt(
+    x: number,
+    y: number,
+    radius: number,
+    except?: Line,
+  ): LineEnd | null {
     let best: LineEnd | null = null;
     let bestDistance = radius;
     for (const line of this.lines) {
@@ -179,7 +184,7 @@ export class Playground {
       friction: 0.4,
       restitution: 0.3,
     });
-    const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+    const color = BALL_COLORS[Math.floor(Math.random() * BALL_COLORS.length)];
     const ball = new Ball(body, BALL_RADIUS_M * PX_PER_M, color);
     this.balls.push(ball);
 
@@ -216,7 +221,9 @@ export class Playground {
   }
 
   contains(thing: Thing): boolean {
-    return thing instanceof Ball ? this.balls.includes(thing) : this.bubbles.includes(thing);
+    return thing instanceof Ball
+      ? this.balls.includes(thing)
+      : this.bubbles.includes(thing);
   }
 
   // Remove balls that have fallen well below the lowest line, and bubbles

@@ -1,4 +1,4 @@
-import type { Point } from "../simplify";
+import type { Point } from "../geometry/point";
 import type { DownResult, Tool, ToolContext } from "./tool";
 
 // Tap to drop a ball.
@@ -8,7 +8,8 @@ export class BallTool implements Tool {
   title = "Tap to drop a ball";
   cursor = "pointer";
   hints = {
-    mouse: "Click to drop a ball · click bubbles to pop them · hold Space and drag to move around",
+    mouse:
+      "Click to drop a ball · click bubbles to pop them · hold Space and drag to move around",
     touch: "Tap to drop a ball · tap bubbles to pop them",
   };
   popsBubbles = true;
@@ -31,7 +32,8 @@ export class BubbleTool implements Tool {
   title = "Tap to blow a bubble";
   cursor = "pointer";
   hints = {
-    mouse: "Click to blow a bubble · click one to pop it · hold Space and drag to move around",
+    mouse:
+      "Click to blow a bubble · click one to pop it · hold Space and drag to move around",
     touch: "Tap to blow a bubble · tap one to pop it",
   };
   popsBubbles = true;

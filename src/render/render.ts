@@ -1,12 +1,13 @@
 import { getPattern, type Background } from "./backgrounds";
-import type { Camera } from "./camera";
+import type { Camera } from "../camera";
 import type { Effects } from "./effects";
-import type { Overlay } from "./tools";
-import type { Playground } from "./world/playground";
-import type { Point } from "./simplify";
+import type { Overlay } from "../tools";
+import type { Playground } from "../world/playground";
+import type { Point } from "../geometry/point";
+import { ACCENT, ERASER_COLOR, LINE_COLOR, PREVIEW_COLOR } from "../palette";
+import { drawBubble } from "./bubble";
 
 const LINE_WIDTH_PX = 4;
-const LINE_COLOR = "#2b2b2b";
 
 function drawPolyline(ctx: CanvasRenderingContext2D, points: Point[]): void {
   if (points.length === 0) return;
@@ -18,11 +19,25 @@ function drawPolyline(ctx: CanvasRenderingContext2D, points: Point[]): void {
 
 // The background pattern is fixed to the world, so you can see the view
 // moving even over empty space.
-function drawBackground(ctx: CanvasRenderingContext2D, camera: Camera, bg: Background): void {
+function drawBackground(
+  ctx: CanvasRenderingContext2D,
+  camera: Camera,
+  bg: Background,
+): void {
   const topLeft = camera.screenToWorld(0, 0);
   const bottomRight = camera.screenToWorld(camera.width, camera.height);
-  ctx.fillStyle = getPattern(ctx, bg, camera.zoom, window.devicePixelRatio || 1);
-  ctx.fillRect(topLeft.x, topLeft.y, bottomRight.x - topLeft.x, bottomRight.y - topLeft.y);
+  ctx.fillStyle = getPattern(
+    ctx,
+    bg,
+    camera.zoom,
+    window.devicePixelRatio || 1,
+  );
+  ctx.fillRect(
+    topLeft.x,
+    topLeft.y,
+    bottomRight.x - topLeft.x,
+    bottomRight.y - topLeft.y,
+  );
 }
 
 export function render(
@@ -47,14 +62,14 @@ export function render(
   for (const line of playground.lines) drawPolyline(ctx, line.points);
 
   if (preview) {
-    ctx.strokeStyle = "#6b7280";
+    ctx.strokeStyle = PREVIEW_COLOR;
     drawPolyline(ctx, preview);
   }
 
   // Rings on line ends show where a new line can carry on from; the one that
   // will be joined is filled in.
   if (lineEnds) {
-    ctx.strokeStyle = "#3b82f699";
+    ctx.strokeStyle = `${ACCENT}99`;
     ctx.lineWidth = 2 / camera.zoom;
     for (const p of lineEnds) {
       ctx.beginPath();
@@ -62,7 +77,7 @@ export function render(
       ctx.stroke();
     }
   }
-  ctx.fillStyle = "#3b82f659";
+  ctx.fillStyle = `${ACCENT}59`;
   for (const target of snapTargets) {
     ctx.beginPath();
     ctx.arc(target.x, target.y, 11 / camera.zoom, 0, Math.PI * 2);
@@ -72,7 +87,7 @@ export function render(
   // The eraser: a soft circle showing what it will rub out.
   if (eraser) {
     ctx.fillStyle = "#ffffff66";
-    ctx.strokeStyle = "#ef4444aa";
+    ctx.strokeStyle = `${ERASER_COLOR}aa`;
     ctx.lineWidth = 2 / camera.zoom;
     ctx.beginPath();
     ctx.arc(eraser.x, eraser.y, eraser.radius, 0, Math.PI * 2);
@@ -83,7 +98,7 @@ export function render(
   // The points placed with the Curve tool; the last one is the "click again
   // to finish" target, so it's drawn bigger.
   if (curveHandles) {
-    ctx.fillStyle = "#3b82f6";
+    ctx.fillStyle = ACCENT;
     curveHandles.forEach((p, i) => {
       const r = (i === curveHandles.length - 1 ? 7 : 5) / camera.zoom;
       ctx.beginPath();
@@ -106,9 +121,11 @@ export function render(
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(x, y);
-    ctx.lineTo(x + Math.cos(angle) * ball.radius * 0.8, y + Math.sin(angle) * ball.radius * 0.8);
+    ctx.lineTo(
+      x + Math.cos(angle) * ball.radius * 0.8,
+      y + Math.sin(angle) * ball.radius * 0.8,
+    );
     ctx.stroke();
-
   }
 
   // Bubbles go on top, since you can see through them.
@@ -118,7 +135,8 @@ export function render(
     // A quick squash-and-stretch after each bump, dying away in ~0.3s.
     const age = playground.now - bubble.lastHitAt;
     // (Never-bumped bubbles have an infinite age, and sin(Infinity) is NaN.)
-    const squash = age < 1 ? Math.sin(age * 45) * Math.exp(-age * 12) * 0.15 : 0;
+    const squash =
+      age < 1 ? Math.sin(age * 45) * Math.exp(-age * 12) * 0.15 : 0;
     ctx.save();
     ctx.translate(x, y);
     ctx.scale(1 + squash, 1 - squash);
@@ -131,7 +149,7 @@ export function render(
   // Ring around whatever the camera is following.
   if (camera.target) {
     const { x, y } = camera.target.position;
-    ctx.strokeStyle = "#3b82f6";
+    ctx.strokeStyle = ACCENT;
     ctx.lineWidth = 3 / camera.zoom;
     ctx.beginPath();
     ctx.arc(x, y, camera.target.radius + 6, 0, Math.PI * 2);
@@ -139,49 +157,4 @@ export function render(
   }
 
   ctx.restore();
-}
-
-// Soap-film colours for the bubble's rim, looping back to the start.
-export const BUBBLE_COLORS = ["#ffb3d9", "#c9b3ff", "#a8d8ff", "#b3f5d1", "#fff0a8", "#ffb3d9"];
-
-function drawBubble(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  r: number,
-  phase: number,
-  time: number,
-): void {
-  // Nearly clear in the middle, a little denser towards the edge.
-  const film = ctx.createRadialGradient(x, y, r * 0.2, x, y, r);
-  film.addColorStop(0, "rgba(255, 255, 255, 0.04)");
-  film.addColorStop(0.75, "rgba(220, 235, 255, 0.14)");
-  film.addColorStop(1, "rgba(200, 220, 255, 0.4)");
-  ctx.fillStyle = film;
-  ctx.beginPath();
-  ctx.arc(x, y, r, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Rainbow rim that slowly swirls round.
-  const rim = ctx.createConicGradient(time * 0.6 + phase, x, y);
-  BUBBLE_COLORS.forEach((color, i) => rim.addColorStop(i / (BUBBLE_COLORS.length - 1), color));
-  const rimWidth = Math.max(1.5, r * 0.08);
-  ctx.strokeStyle = rim;
-  ctx.lineWidth = rimWidth;
-  ctx.globalAlpha = 0.85;
-  ctx.beginPath();
-  ctx.arc(x, y, r - rimWidth / 2, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.globalAlpha = 1;
-
-  // Shine: a big highlight top-left and a small one bottom-right. They don't
-  // rotate with the bubble, because the "light" stays put.
-  ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
-  ctx.beginPath();
-  ctx.ellipse(x - r * 0.38, y - r * 0.4, r * 0.24, r * 0.12, -Math.PI / 4, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
-  ctx.beginPath();
-  ctx.arc(x + r * 0.42, y + r * 0.38, r * 0.07, 0, Math.PI * 2);
-  ctx.fill();
 }

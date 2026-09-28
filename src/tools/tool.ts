@@ -1,6 +1,6 @@
 import type { Camera } from "../camera";
 import type { Line, LineEnd, Playground } from "../world/playground";
-import type { Point } from "../simplify";
+import type { Point } from "../geometry/point";
 
 // Everything drawn on top of the world to show what the tools are doing.
 export interface Overlay {

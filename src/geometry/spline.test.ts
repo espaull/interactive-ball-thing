@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { catmullRom } from "./curve";
-import type { Point } from "./simplify";
+import { catmullRom } from "./spline";
+import type { Point } from "./point";
 
 const nearest = (curve: Point[], p: Point) =>
   Math.min(...curve.map((c) => Math.hypot(c.x - p.x, c.y - p.y)));
@@ -29,13 +29,22 @@ describe("catmullRom", () => {
     // Box2D rejects chain vertices that are too close together.
     const curve = catmullRom([...controls, controls[3]], 6);
     for (let i = 1; i < curve.length; i++) {
-      const gap = Math.hypot(curve[i].x - curve[i - 1].x, curve[i].y - curve[i - 1].y);
+      const gap = Math.hypot(
+        curve[i].x - curve[i - 1].x,
+        curve[i].y - curve[i - 1].y,
+      );
       expect(gap).toBeGreaterThanOrEqual(2);
     }
   });
 
   it("makes a straight line from two points", () => {
-    const curve = catmullRom([{ x: 0, y: 0 }, { x: 60, y: 0 }], 6);
+    const curve = catmullRom(
+      [
+        { x: 0, y: 0 },
+        { x: 60, y: 0 },
+      ],
+      6,
+    );
     for (const p of curve) expect(p.y).toBeCloseTo(0);
   });
 });

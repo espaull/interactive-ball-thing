@@ -3,7 +3,11 @@ import { Playground } from "./playground";
 
 const STEP = 1 / 60;
 
-function run(playground: Playground, seconds: number, eachStep?: () => void): void {
+function run(
+  playground: Playground,
+  seconds: number,
+  eachStep?: () => void,
+): void {
   for (let t = 0; t < seconds; t += STEP) {
     eachStep?.();
     playground.step(STEP);
@@ -12,14 +16,18 @@ function run(playground: Playground, seconds: number, eachStep?: () => void): vo
 
 function staticBodyCount(playground: Playground): number {
   let count = 0;
-  for (let b = playground.world.getBodyList(); b; b = b.getNext()) if (b.isStatic()) count++;
+  for (let b = playground.world.getBodyList(); b; b = b.getNext())
+    if (b.isStatic()) count++;
   return count;
 }
 
 describe("lines", () => {
   it("erasing through the middle splits a line into two", () => {
     const pg = new Playground();
-    pg.addLine([{ x: 0, y: 100 }, { x: 300, y: 100 }]);
+    pg.addLine([
+      { x: 0, y: 100 },
+      { x: 300, y: 100 },
+    ]);
     pg.eraseAt(150, 100, 20);
     expect(pg.lines).toHaveLength(2);
     // The old physics body is gone; one body per piece.
@@ -28,16 +36,28 @@ describe("lines", () => {
 
   it("replacing a line's shape keeps one physics body", () => {
     const pg = new Playground();
-    pg.addLine([{ x: 0, y: 100 }, { x: 300, y: 100 }]);
-    pg.replaceLine(pg.lines[0], [{ x: 0, y: 100 }, { x: 300, y: 150 }]);
+    pg.addLine([
+      { x: 0, y: 100 },
+      { x: 300, y: 100 },
+    ]);
+    pg.replaceLine(pg.lines[0], [
+      { x: 0, y: 100 },
+      { x: 300, y: 150 },
+    ]);
     expect(pg.lines).toHaveLength(1);
     expect(staticBodyCount(pg)).toBe(1);
   });
 
   it("finds the nearest line end, skipping an excluded line", () => {
     const pg = new Playground();
-    pg.addLine([{ x: 0, y: 0 }, { x: 100, y: 0 }]);
-    pg.addLine([{ x: 110, y: 0 }, { x: 200, y: 0 }]);
+    pg.addLine([
+      { x: 0, y: 0 },
+      { x: 100, y: 0 },
+    ]);
+    pg.addLine([
+      { x: 110, y: 0 },
+      { x: 200, y: 0 },
+    ]);
     const [first, second] = pg.lines;
     expect(pg.lineEndAt(104, 0, 20)?.line).toBe(first);
     expect(pg.lineEndAt(104, 0, 20, first)?.line).toBe(second);
@@ -48,7 +68,10 @@ describe("lines", () => {
 describe("balls", () => {
   it("fall and land on a line", () => {
     const pg = new Playground();
-    pg.addLine([{ x: 0, y: 400 }, { x: 800, y: 400 }]);
+    pg.addLine([
+      { x: 0, y: 400 },
+      { x: 800, y: 400 },
+    ]);
     const ball = pg.addBall(400, 100);
     run(pg, 3);
     const bottom = ball.position.y + ball.radius;
@@ -68,11 +91,15 @@ describe("bubbles", () => {
     const pg = new Playground();
     let pops = 0;
     pg.onPop = () => pops++;
-    pg.addLine([{ x: 0, y: 200 }, { x: 800, y: 200 }]);
+    pg.addLine([
+      { x: 0, y: 200 },
+      { x: 800, y: 200 },
+    ]);
     const bubble = pg.addBubble(400, 280);
     const hitsSeen: number[] = [];
     run(pg, 20, () => {
-      if (pops === 0 && hitsSeen.at(-1) !== bubble.hits) hitsSeen.push(bubble.hits);
+      if (pops === 0 && hitsSeen.at(-1) !== bubble.hits)
+        hitsSeen.push(bubble.hits);
     });
     expect(hitsSeen).toEqual([0, 1, 2]);
     expect(pops).toBe(1);
@@ -110,7 +137,10 @@ describe("bubbles", () => {
     const start = bubble.position;
     run(pg, 4, () => {
       const push = bubble.body.getMass() * 10 * 0.6;
-      bubble.body.applyForceToCenter({ x: towardsSlope.x * push, y: towardsSlope.y * push }, true);
+      bubble.body.applyForceToCenter(
+        { x: towardsSlope.x * push, y: towardsSlope.y * push },
+        true,
+      );
     });
     const slidPx = start.y - bubble.position.y;
 

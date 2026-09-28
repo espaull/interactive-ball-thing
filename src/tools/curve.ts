@@ -1,7 +1,7 @@
-import { catmullRom } from "../curve";
+import { catmullRom } from "../geometry/spline";
 import type { LineEnd } from "../world/playground";
-import type { Point } from "../simplify";
-import { curveShape, LINE_SPACING_PX } from "../stroke";
+import type { Point } from "../geometry/point";
+import { curveShape, LINE_SPACING_PX } from "../geometry/stroke";
 import { commitLine, lineEnds } from "./lines";
 import type { DownResult, Overlay, Tool, ToolContext } from "./tool";
 
@@ -87,7 +87,9 @@ export class CurveTool implements Tool {
     if (this.points) {
       // Preview the curve running on to where the pointer is.
       const points =
-        hover && !this.isNearLastPoint(hover) ? [...this.points, hover] : this.points;
+        hover && !this.isNearLastPoint(hover)
+          ? [...this.points, hover]
+          : this.points;
       preview = catmullRom(points, LINE_SPACING_PX);
     }
     return {
@@ -106,7 +108,8 @@ export class CurveTool implements Tool {
   private isNearLastPoint(p: Point): boolean {
     const last = this.points?.at(-1);
     if (!last) return false;
-    const screenDistance = Math.hypot(p.x - last.x, p.y - last.y) * this.ctx.camera.zoom;
+    const screenDistance =
+      Math.hypot(p.x - last.x, p.y - last.y) * this.ctx.camera.zoom;
     return screenDistance <= FINISH_RADIUS_PX;
   }
 }

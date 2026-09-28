@@ -1,5 +1,5 @@
 import type { Vec2Value } from "planck";
-import type { Point } from "../simplify";
+import type { Point } from "../geometry/point";
 
 // Planck works in metres; everything outside the world folder works in
 // pixels (world pixels, before the camera's zoom). Convert at the boundary.

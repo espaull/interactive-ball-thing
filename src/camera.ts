@@ -1,5 +1,5 @@
 import type { Playground, Thing } from "./world/playground";
-import type { Point } from "./simplify";
+import type { Point } from "./geometry/point";
 
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 2;

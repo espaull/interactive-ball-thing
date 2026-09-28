@@ -6,7 +6,10 @@ const line = Array.from({ length: 51 }, (_, i) => ({ x: i * 6, y: 100 }));
 
 // [start x, end x] of each piece, rounded.
 const spans = (pieces: { x: number }[][] | null) =>
-  pieces?.map((p) => [Math.round(p[0].x * 10) / 10, Math.round(p.at(-1)!.x * 10) / 10]);
+  pieces?.map((p) => [
+    Math.round(p[0].x * 10) / 10,
+    Math.round(p.at(-1)!.x * 10) / 10,
+  ]);
 
 function seeded(seed: number): () => number {
   return () => {
@@ -32,7 +35,9 @@ describe("erasePolyline", () => {
   });
 
   it("trims an end", () => {
-    expect(spans(erasePolyline(line, { x: 300, y: 100 }, 20))).toEqual([[0, 280]]);
+    expect(spans(erasePolyline(line, { x: 300, y: 100 }, 20))).toEqual([
+      [0, 280],
+    ]);
   });
 
   it("returns null when it misses", () => {
@@ -40,7 +45,16 @@ describe("erasePolyline", () => {
   });
 
   it("removes a line entirely inside the eraser", () => {
-    expect(erasePolyline([{ x: 0, y: 0 }, { x: 10, y: 0 }], { x: 5, y: 0 }, 20)).toEqual([]);
+    expect(
+      erasePolyline(
+        [
+          { x: 0, y: 0 },
+          { x: 10, y: 0 },
+        ],
+        { x: 5, y: 0 },
+        20,
+      ),
+    ).toEqual([]);
   });
 
   // Regression: when the eraser's edge crossed the line exactly on one of its
@@ -48,7 +62,9 @@ describe("erasePolyline", () => {
   it("keeps the rest of the line when the edge lands exactly on a point", () => {
     // Circle at x=22, radius 20: its edge is at x=42, which is a point.
     // The 2px scrap before x=2 is too small to keep.
-    expect(spans(erasePolyline(line, { x: 22, y: 100 }, 20))).toEqual([[42, 300]]);
+    expect(spans(erasePolyline(line, { x: 22, y: 100 }, 20))).toEqual([
+      [42, 300],
+    ]);
   });
 
   it("never keeps anything inside the eraser, or loses anything outside it", () => {
@@ -58,7 +74,8 @@ describe("erasePolyline", () => {
       const r = 5 + rand() * 40;
       const kept = (erasePolyline(line, c, r) ?? [line]).flat();
 
-      for (const p of kept) expect(Math.hypot(p.x - c.x, p.y - c.y)).toBeGreaterThan(r - 1e-6);
+      for (const p of kept)
+        expect(Math.hypot(p.x - c.x, p.y - c.y)).toBeGreaterThan(r - 1e-6);
 
       for (const p of line) {
         const outsideBy = Math.hypot(p.x - c.x, p.y - c.y) - r;

@@ -1,4 +1,4 @@
-import type { Point } from "../simplify";
+import type { Point } from "../geometry/point";
 import { lineEnds } from "./lines";
 import type { DownResult, Overlay, Tool, ToolContext } from "./tool";
 
@@ -13,7 +13,8 @@ export class EraserTool implements Tool {
   title = "Rub out parts of lines";
   cursor = "none"; // the eraser's circle is drawn instead
   hints = {
-    mouse: "Drag over lines to rub them out · the cut ends get rings you can draw from",
+    mouse:
+      "Drag over lines to rub them out · the cut ends get rings you can draw from",
     touch: "Drag over lines to rub them out",
   };
   popsBubbles = true;
@@ -47,7 +48,11 @@ export class EraserTool implements Tool {
     const steps = Math.ceil(Math.hypot(to.x - from.x, to.y - from.y) / (r / 4));
     for (let i = 1; i <= steps; i++) {
       const t = i / steps;
-      this.ctx.playground.eraseAt(from.x + (to.x - from.x) * t, from.y + (to.y - from.y) * t, r);
+      this.ctx.playground.eraseAt(
+        from.x + (to.x - from.x) * t,
+        from.y + (to.y - from.y) * t,
+        r,
+      );
     }
     this.from = to;
   }

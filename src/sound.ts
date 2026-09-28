@@ -19,7 +19,8 @@ export function playPop(radiusPx: number): void {
   if (!ctx) return;
 
   const now = ctx.currentTime;
-  const pitch = Math.max(350, 1100 - radiusPx * 22) * (0.9 + Math.random() * 0.2);
+  const pitch =
+    Math.max(350, 1100 - radiusPx * 22) * (0.9 + Math.random() * 0.2);
 
   const osc = ctx.createOscillator();
   osc.type = "sine";

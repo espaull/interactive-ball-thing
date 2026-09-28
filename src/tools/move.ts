@@ -1,4 +1,4 @@
-import type { Point } from "../simplify";
+import type { Point } from "../geometry/point";
 import type { DownResult, Tool, ToolContext } from "./tool";
 
 // Drag to look around; tap a ball or bubble to follow it.

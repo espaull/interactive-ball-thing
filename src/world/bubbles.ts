@@ -1,5 +1,5 @@
 import { CircleShape, type Body, type Contact, type World } from "planck";
-import type { Point } from "../simplify";
+import type { Point } from "../geometry/point";
 import { PX_PER_M, toMetres, toPixels } from "./units";
 
 const MIN_RADIUS_M = 0.35;
@@ -115,7 +115,10 @@ export class BubbleBehaviour {
     for (const bubble of this.ceilingHits) {
       if (worn.includes(bubble)) continue;
       const v = bubble.body.getLinearVelocity();
-      bubble.body.setLinearVelocity({ x: v.x, y: Math.max(v.y, CEILING_BOUNCE_SPEED) });
+      bubble.body.setLinearVelocity({
+        x: v.x,
+        y: Math.max(v.y, CEILING_BOUNCE_SPEED),
+      });
     }
     this.ceilingHits.clear();
     return worn;
@@ -161,7 +164,8 @@ export class BubbleBehaviour {
     const manifold = contact.getWorldManifold(null);
     if (!manifold || manifold.pointCount === 0) return;
     // The normal points from A to B; flip it so it points from bubble to line.
-    const towardsLineY = bubble.body === bodyA ? manifold.normal.y : -manifold.normal.y;
+    const towardsLineY =
+      bubble.body === bodyA ? manifold.normal.y : -manifold.normal.y;
     // y grows downwards, so a negative y means the line is above the bubble.
     if (towardsLineY < -0.5) this.ceilingHits.add(bubble);
   };

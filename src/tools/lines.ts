@@ -1,7 +1,7 @@
 // Shared by the tools that make lines (Draw and Curve).
 import type { LineEnd, Playground } from "../world/playground";
-import type { Point } from "../simplify";
-import { joinShape, type ShapeBuilder } from "../stroke";
+import type { Point } from "../geometry/point";
+import { joinShape, type ShapeBuilder } from "../geometry/stroke";
 import type { ToolContext } from "./tool";
 
 // A line's points, reordered so the given end comes last.
@@ -26,7 +26,8 @@ export function commitLine(
   if (points.length < 2) return;
   const { playground } = ctx;
   // The start line could have been cleared away in the meantime.
-  const startEnd = start && playground.lines.includes(start.line) ? start : null;
+  const startEnd =
+    start && playground.lines.includes(start.line) ? start : null;
   const finishEnd = ctx.findSnap(points.at(-1)!, startEnd?.line);
   // Snap the last point onto the end being joined.
   if (finishEnd) points = [...points.slice(0, -1), finishEnd.point];

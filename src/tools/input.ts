@@ -1,6 +1,6 @@
 import type { Camera } from "../camera";
 import type { Playground } from "../world/playground";
-import type { Point } from "../simplify";
+import type { Point } from "../geometry/point";
 import type { Overlay, Tool } from "./tool";
 
 // Turns pointer, wheel and keyboard events into tool actions. Handles what
@@ -33,7 +33,10 @@ export class Input {
     // Not passive, so we can stop the browser scrolling/zooming the page.
     canvas.addEventListener("wheel", this.onWheel, { passive: false });
     // Stop the middle button starting the browser's autoscroll.
-    canvas.addEventListener("mousedown", (e) => e.button === 1 && e.preventDefault());
+    canvas.addEventListener(
+      "mousedown",
+      (e) => e.button === 1 && e.preventDefault(),
+    );
     window.addEventListener("keydown", this.onKeyDown);
     window.addEventListener("keyup", this.onKeyUp);
     // Releasing Space in another window would otherwise leave it "stuck".
@@ -84,7 +87,11 @@ export class Input {
   }
 
   private updateCursor(): void {
-    this.canvas.style.cursor = this.panFrom ? "grabbing" : this.spaceHeld ? "grab" : this.tool.cursor;
+    this.canvas.style.cursor = this.panFrom
+      ? "grabbing"
+      : this.spaceHeld
+        ? "grab"
+        : this.tool.cursor;
   }
 
   private capture(e: PointerEvent): void {
@@ -136,7 +143,10 @@ export class Input {
       // Panning by hand takes over from Follow.
       if (this.camera.following) this.camera.setFollowing(false);
       const screen = this.screenPoint(e);
-      this.camera.panByScreen(screen.x - this.panFrom.x, screen.y - this.panFrom.y);
+      this.camera.panByScreen(
+        screen.x - this.panFrom.x,
+        screen.y - this.panFrom.y,
+      );
       this.panFrom = screen;
       return;
     }
