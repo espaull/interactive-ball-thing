@@ -70,6 +70,20 @@ export class Camera {
     this.y += before.y - after.y;
   }
 
+  // Two fingers moved from (fromA, fromB) to (toA, toB), in screen pixels:
+  // zoom by how much they spread or pinched, and pan by how far the point
+  // between them moved. What was under each finger stays under it (unless
+  // the zoom hits its limit).
+  pinch(fromA: Point, fromB: Point, toA: Point, toB: Point): void {
+    const fromMid = { x: (fromA.x + fromB.x) / 2, y: (fromA.y + fromB.y) / 2 };
+    const toMid = { x: (toA.x + toB.x) / 2, y: (toA.y + toB.y) / 2 };
+    const fromSpread = Math.hypot(fromB.x - fromA.x, fromB.y - fromA.y);
+    const toSpread = Math.hypot(toB.x - toA.x, toB.y - toA.y);
+    if (fromSpread > 0)
+      this.zoomAt(fromMid.x, fromMid.y, toSpread / fromSpread);
+    this.panByScreen(toMid.x - fromMid.x, toMid.y - fromMid.y);
+  }
+
   update(dt: number, playground: Playground): void {
     if (!this.target) return;
     // The ball fell off the world (or the bubble floated away) and was

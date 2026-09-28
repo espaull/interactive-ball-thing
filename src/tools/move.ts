@@ -9,7 +9,8 @@ export class MoveTool implements Tool {
   cursor = "grab";
   hints = {
     mouse: "Drag to look around · tap a ball or bubble to follow it",
-    touch: "Drag to look around · tap a ball or bubble to follow it",
+    touch:
+      "Drag to look around · tap a ball or bubble to follow it · pinch with two fingers to zoom",
   };
   // Tapping a bubble follows it instead.
   popsBubbles = false;

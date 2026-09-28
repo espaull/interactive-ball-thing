@@ -18,7 +18,7 @@ export class PencilTool implements Tool {
     mouse:
       "Drag to draw · start or finish on a ring to join lines up · click bubbles to pop them · hold Space and drag to move around",
     touch:
-      "Drag to draw · start or finish on a ring to join lines up · tap bubbles to pop them",
+      "Drag to draw · start or finish on a ring to join lines up · two fingers to scroll and zoom",
   };
   popsBubbles = true;
 
