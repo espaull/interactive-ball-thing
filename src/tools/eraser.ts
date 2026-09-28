@@ -5,17 +5,19 @@ import type { DownResult, Overlay, Tool, ToolContext } from "./tool";
 // Size of the eraser, in screen pixels.
 const RADIUS_PX = 18;
 
-// Rubs out the parts of lines under it, splitting them where it cuts through.
-// The cut ends get rings like any other line end, so they can be joined up.
+// Rubs out the parts of lines and boosts under it, splitting them where it
+// cuts through, and removes any ball it touches. The cut ends get rings like
+// any other line end, so they can be joined up.
 export class EraserTool implements Tool {
   label = "Erase";
   icon = "🧽";
-  title = "Rub out parts of lines and boosts";
+  title = "Rub out lines, boosts and balls";
   cursor = "none"; // the eraser's circle is drawn instead
   hints = {
     mouse:
-      "Drag over lines and boosts to rub them out · the cut ends get rings you can draw from",
-    touch: "Drag over lines and boosts to rub them out",
+      "Drag over lines and boosts to rub them out · click a ball to remove it · the cut ends get rings you can draw from",
+    touch:
+      "Drag over lines and boosts to rub them out · tap a ball to remove it",
   };
   popsBubbles = true;
 

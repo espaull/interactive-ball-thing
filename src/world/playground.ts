@@ -127,7 +127,7 @@ export class Playground {
   }
 
   // Rub out every part of every line and boost strip inside a circle,
-  // splitting them where the eraser cuts through.
+  // splitting them where the eraser cuts through, and any ball it touches.
   eraseAt(x: number, y: number, radius: number): void {
     for (const line of [...this.lines]) {
       const pieces = erasePolyline(line.points, { x, y }, radius);
@@ -141,6 +141,12 @@ export class Playground {
       this.boosts.splice(this.boosts.indexOf(boost), 1);
       // Pieces keep the order of the points, so they still point the same way.
       for (const piece of pieces) this.addBoost(piece);
+    }
+    // Balls it touches go too (handy for one stuck on a track).
+    for (const ball of [...this.balls]) {
+      const { x: bx, y: by } = ball.position;
+      if (Math.hypot(bx - x, by - y) < radius + ball.radius)
+        this.removeBall(ball);
     }
   }
 

@@ -292,3 +292,16 @@ describe("boost strips", () => {
     });
   });
 });
+
+describe("erasing balls", () => {
+  it("removes a ball the eraser touches, and only that one", () => {
+    const pg = new Playground();
+    const stuck = pg.addBall(200, 200);
+    const other = pg.addBall(400, 200);
+    // The eraser's edge overlaps the first ball's edge.
+    pg.eraseAt(200 + stuck.radius + 10, 200, 18);
+    expect(pg.contains(stuck)).toBe(false);
+    expect(pg.contains(other)).toBe(true);
+    expect(pg.world.getBodyCount()).toBe(1);
+  });
+});
