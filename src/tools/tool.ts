@@ -16,6 +16,8 @@ export interface Overlay {
   eraser: { x: number; y: number; radius: number } | null;
   // The boost strip being painted.
   boostPreview: Point[] | null;
+  // The first portal of a pair, waiting for its partner.
+  portalPending: { point: Point; color: string } | null;
 }
 
 // What the tools share.

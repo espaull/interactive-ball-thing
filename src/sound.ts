@@ -36,3 +36,24 @@ export function playPop(radiusPx: number): void {
   osc.start(now);
   osc.stop(now + 0.12);
 }
+
+// A quick rising "whoop" for going through a portal.
+export function playPortal(): void {
+  const ctx = getAudio();
+  if (!ctx) return;
+
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  osc.type = "triangle";
+  osc.frequency.setValueAtTime(300, now);
+  osc.frequency.exponentialRampToValueAtTime(900, now + 0.15);
+
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.12, now + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(now);
+  osc.stop(now + 0.2);
+}

@@ -5,6 +5,7 @@ import { CurveTool } from "./curve";
 import { EraserTool } from "./eraser";
 import { MoveTool } from "./move";
 import { PencilTool } from "./pencil";
+import { PortalTool } from "./portal";
 import { BallTool, BubbleTool } from "./spawn";
 import type { Tool, ToolContext } from "./tool";
 
@@ -30,7 +31,7 @@ export function createToolGroups(
   return [
     [new PencilTool(ctx), new CurveTool(ctx)],
     [new EraserTool(ctx)],
-    [new BoostTool(ctx)],
+    [new BoostTool(ctx), new PortalTool(ctx)],
     [new MoveTool(ctx)],
     [new BallTool(ctx), new BubbleTool(ctx)],
   ];

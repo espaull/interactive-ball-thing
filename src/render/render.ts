@@ -7,6 +7,7 @@ import type { Point } from "../geometry/point";
 import { ACCENT, ERASER_COLOR, LINE_COLOR, PREVIEW_COLOR } from "../palette";
 import { drawBoostStrip } from "./boost";
 import { drawBubble } from "./bubble";
+import { drawPortal } from "./portal";
 
 const LINE_WIDTH_PX = 4;
 
@@ -49,8 +50,15 @@ export function render(
   overlay: Overlay,
   effects: Effects,
 ): void {
-  const { preview, curveHandles, lineEnds, snapTargets, eraser, boostPreview } =
-    overlay;
+  const {
+    preview,
+    curveHandles,
+    lineEnds,
+    snapTargets,
+    eraser,
+    boostPreview,
+    portalPending,
+  } = overlay;
   const time = performance.now() / 1000;
   ctx.save();
   ctx.clearRect(0, 0, camera.width, camera.height);
@@ -113,6 +121,15 @@ export function render(
       ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
       ctx.fill();
     });
+  }
+
+  // Portals go under the balls, so balls look like they drop in.
+  for (const pair of playground.portalPairs) {
+    drawPortal(ctx, pair.a, pair.color, time);
+    drawPortal(ctx, pair.b, pair.color, time);
+  }
+  if (portalPending) {
+    drawPortal(ctx, portalPending.point, portalPending.color, time, 0.5);
   }
 
   for (const ball of playground.balls) {

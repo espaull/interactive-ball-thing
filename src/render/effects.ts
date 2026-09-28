@@ -17,6 +17,7 @@ interface Ring {
   x: number;
   y: number;
   radius: number;
+  color: string;
   age: number;
   life: number;
 }
@@ -30,7 +31,14 @@ export class Effects {
   readonly rings: Ring[] = [];
 
   pop(x: number, y: number, radius: number): void {
-    this.rings.push({ x, y, radius, age: 0, life: RING_LIFE });
+    this.rings.push({
+      x,
+      y,
+      radius,
+      color: "#ffffff",
+      age: 0,
+      life: RING_LIFE,
+    });
 
     const count = 10 + Math.round(radius / 3);
     for (let i = 0; i < count; i++) {
@@ -48,6 +56,12 @@ export class Effects {
         life: 0.4 + Math.random() * 0.3,
       });
     }
+  }
+
+  // A coloured ring flashing outwards, e.g. where something goes through a
+  // portal.
+  flash(x: number, y: number, radius: number, color: string): void {
+    this.rings.push({ x, y, radius, color, age: 0, life: RING_LIFE * 1.5 });
   }
 
   update(dt: number): void {
@@ -71,7 +85,7 @@ export class Effects {
     for (const r of this.rings) {
       const t = r.age / r.life;
       ctx.globalAlpha = 1 - t;
-      ctx.strokeStyle = "#ffffff";
+      ctx.strokeStyle = r.color;
       ctx.lineWidth = 2.5 / zoom;
       ctx.beginPath();
       ctx.arc(r.x, r.y, r.radius * (1 + RING_GROWTH * t), 0, Math.PI * 2);

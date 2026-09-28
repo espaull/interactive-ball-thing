@@ -4,10 +4,12 @@ import type { Point } from "../geometry/point";
 import { BALL_COLORS } from "../palette";
 import { BOOST_ACCELERATION, BOOST_MAX_SPEED, BoostZone } from "./boosts";
 import { Crossings } from "./crossings";
+import { Portals, type PortalPair, type Teleport } from "./portals";
 import { Bubble, BubbleBehaviour, createBubble } from "./bubbles";
 import { PX_PER_M, toMetres, toPixels } from "./units";
 
 export { BoostZone } from "./boosts";
+export type { PortalPair, Teleport } from "./portals";
 export { Bubble } from "./bubbles";
 
 const BALL_RADIUS_M = 0.4;
@@ -88,6 +90,15 @@ export class Playground {
   // Called whenever a bubble pops (clicked or bumped too often), for the
   // splash and sound.
   onPop: (x: number, y: number, radius: number) => void = () => {};
+  // Called whenever something goes through a portal, for the effects.
+  onTeleport: (teleport: Teleport) => void = () => {};
+
+  private portals = new Portals();
+
+  // Every pair of portals.
+  get portalPairs(): readonly PortalPair[] {
+    return this.portals.pairs;
+  }
 
   // Seconds of simulation so far.
   get now(): number {
@@ -101,6 +112,10 @@ export class Playground {
     this.world.step(dt, 8, 3);
     for (const bubble of this.bubbleBehaviour.afterStep(this.time))
       this.popBubble(bubble);
+    const things = [...this.balls, ...this.bubbles].map((thing) => thing.body);
+    for (const teleport of this.portals.teleport(things)) {
+      this.onTeleport(teleport);
+    }
   }
 
   // --- Lines ---
@@ -142,6 +157,8 @@ export class Playground {
       // Pieces keep the order of the points, so they still point the same way.
       for (const piece of pieces) this.addBoost(piece);
     }
+    // A portal it touches goes, along with its partner.
+    this.portals.removeNear(x, y, radius);
     // Balls it touches go too (handy for one stuck on a track).
     for (const ball of [...this.balls]) {
       const { x: bx, y: by } = ball.position;
@@ -221,6 +238,13 @@ export class Playground {
         break;
       }
     }
+  }
+
+  // --- Portals ---
+
+  // A linked pair of portals at `a` and `b`.
+  addPortalPair(a: Point, b: Point, color: string): void {
+    this.portals.add({ a, b, color });
   }
 
   // --- Balls and bubbles ---
@@ -304,6 +328,7 @@ export class Playground {
     this.balls.length = 0;
     this.bubbles.length = 0;
     this.boosts.length = 0;
+    this.portals.clear();
     this.bubbleBehaviour.clear();
     this.crossings.clear();
     this.lineBodies.clear();

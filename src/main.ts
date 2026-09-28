@@ -2,7 +2,8 @@ import "./style.css";
 import { Camera } from "./camera";
 import { Effects } from "./render/effects";
 import { render } from "./render/render";
-import { playPop } from "./sound";
+import { playPop, playPortal } from "./sound";
+import { PORTAL_RADIUS_PX } from "./world/portals";
 import { createToolGroups } from "./tools";
 import { Input } from "./tools/input";
 import {
@@ -28,6 +29,13 @@ const input = new Input(canvas, playground, camera, toolGroups[0][0]);
 playground.onPop = (x, y, radius) => {
   effects.pop(x, y, radius);
   playPop(radius);
+};
+
+// Going through a portal: a flash at both ends, and a whoop.
+playground.onTeleport = ({ from, to, color }) => {
+  effects.flash(from.x, from.y, PORTAL_RADIUS_PX, color);
+  effects.flash(to.x, to.y, PORTAL_RADIUS_PX, color);
+  playPortal();
 };
 
 keepFocusOffButtons();

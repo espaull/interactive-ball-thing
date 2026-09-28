@@ -35,3 +35,14 @@ export const BUBBLE_COLORS = [
   "#fff0a8",
   "#ffb3d9",
 ];
+
+// Each new pair of portals gets the next of these, so pairs are easy to tell
+// apart.
+export const PORTAL_COLORS = [
+  "#a855f7",
+  "#14b8a6",
+  "#f97316",
+  "#ec4899",
+  "#3b82f6",
+  "#84cc16",
+];
