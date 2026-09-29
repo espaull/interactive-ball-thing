@@ -1,14 +1,10 @@
-import type { Point } from "../geometry/point";
-import { LINE_COLOR } from "../palette";
+import type { Box, Point } from "../geometry/point";
 import { BOOST_HALF_WIDTH_PX } from "../world/boosts";
 import { CANNON_RADIUS_PX } from "../world/cannons";
 import { CUP_RADIUS_PX } from "../world/cups";
 import type { Playground } from "../world/playground";
 import { PORTAL_RADIUS_PX } from "../world/portals";
-import { drawBoostStrip } from "./boost";
-import { drawCannon } from "./cannon";
-import { drawCup } from "./cup";
-import { drawPortal } from "./portal";
+import { drawDesign, LINE_WIDTH_PX } from "./design";
 
 // Size of a gallery picture, in CSS pixels. It's drawn at twice this, so it
 // stays sharp on high-density screens.
@@ -45,33 +41,14 @@ export function drawThumbnail(playground: Playground, base: string): string {
   ctx.scale(scale, scale);
   ctx.translate(-(box.left + box.right) / 2, -(box.top + box.bottom) / 2);
 
-  for (const boost of playground.boosts) drawBoostStrip(ctx, boost.points, 0);
-  ctx.lineWidth = Math.max(4, MIN_LINE_WIDTH / scale);
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-  ctx.strokeStyle = LINE_COLOR;
-  for (const line of playground.lines) {
-    ctx.beginPath();
-    line.points.forEach(({ x, y }, i) =>
-      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y),
-    );
-    ctx.stroke();
-  }
-  for (const cup of playground.cups) drawCup(ctx, cup);
-  for (const { a, b, color } of playground.portalPairs) {
-    drawPortal(ctx, a, color, 0);
-    drawPortal(ctx, b, color, 0);
-  }
-  for (const cannon of playground.cannons) drawCannon(ctx, cannon);
+  drawDesign(
+    ctx,
+    playground,
+    0,
+    Math.max(LINE_WIDTH_PX, MIN_LINE_WIDTH / scale),
+  );
 
   return canvas.toDataURL("image/jpeg", 0.85);
-}
-
-interface Box {
-  left: number;
-  top: number;
-  right: number;
-  bottom: number;
 }
 
 // The area everything in the design covers, or null if there's nothing.

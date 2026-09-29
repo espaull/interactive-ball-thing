@@ -3,23 +3,11 @@ import type { Camera } from "../camera";
 import type { Effects } from "./effects";
 import type { Overlay } from "../tools";
 import type { Playground } from "../world/playground";
-import type { Point } from "../geometry/point";
-import { ACCENT, ERASER_COLOR, LINE_COLOR, PREVIEW_COLOR } from "../palette";
+import { ACCENT, ERASER_COLOR, PREVIEW_COLOR } from "../palette";
 import { drawBoostStrip } from "./boost";
 import { drawBubble } from "./bubble";
-import { drawCannon } from "./cannon";
-import { drawCup } from "./cup";
+import { drawDesign, drawPolyline, LINE_WIDTH_PX } from "./design";
 import { drawPortal } from "./portal";
-
-const LINE_WIDTH_PX = 4;
-
-function drawPolyline(ctx: CanvasRenderingContext2D, points: Point[]): void {
-  if (points.length === 0) return;
-  ctx.beginPath();
-  ctx.moveTo(points[0].x, points[0].y);
-  for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
-  ctx.stroke();
-}
 
 // The background pattern is fixed to the world, so you can see the view
 // moving even over empty space.
@@ -69,18 +57,14 @@ export function render(
 
   drawBackground(ctx, camera, background);
 
-  // Boost strips go under the lines, so the track stays clear on top.
-  for (const boost of playground.boosts)
-    drawBoostStrip(ctx, boost.points, time);
+  // The design, with what the tools are doing drawn on top of it. Balls and
+  // bubbles go over everything, so balls look like they drop into portals.
+  drawDesign(ctx, playground, time);
+
   if (boostPreview) drawBoostStrip(ctx, boostPreview, time, 0.6);
 
-  ctx.lineWidth = LINE_WIDTH_PX;
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-  ctx.strokeStyle = LINE_COLOR;
-  for (const line of playground.lines) drawPolyline(ctx, line.points);
-
   if (preview) {
+    ctx.lineWidth = LINE_WIDTH_PX;
     ctx.strokeStyle = PREVIEW_COLOR;
     drawPolyline(ctx, preview);
   }
@@ -126,19 +110,11 @@ export function render(
     });
   }
 
-  for (const cup of playground.cups) drawCup(ctx, cup);
-
-  // Portals go under the balls, so balls look like they drop in.
-  for (const pair of playground.portalPairs) {
-    drawPortal(ctx, pair.a, pair.color, time);
-    drawPortal(ctx, pair.b, pair.color, time);
-  }
   if (portalPending) {
     drawPortal(ctx, portalPending.end, portalPending.color, time, 0.5);
   }
 
-  // Cannons, and the path a cannon being aimed will send its balls.
-  for (const cannon of playground.cannons) drawCannon(ctx, cannon);
+  // The path a cannon being aimed will send its balls.
   if (trajectory) {
     ctx.fillStyle = `${ACCENT}cc`;
     trajectory.forEach((p, i) => {
