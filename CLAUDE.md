@@ -48,7 +48,8 @@ Live site: https://espaull.github.io/interactive-ball-thing/ — every push to
   `sound.ts` (sounds are synthesised, no audio files). If it's part of the
   design, add it to `Layout`, `parseLayout`, `Playground.layout`/`loadLayout`
   and the thumbnail (`render/thumbnail.ts`). Saves already out there won't
-  have it, so parsing must cope with it missing.
+  have it, so parsing must cope with it missing. If it can be picked up
+  and moved with the Move tool, add it to `Playground.grabAt`.
 
 ## Working agreements
 

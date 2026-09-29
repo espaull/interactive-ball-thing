@@ -22,10 +22,17 @@ export class Cup {
   caught = 0;
 
   constructor(
-    readonly x: number,
-    readonly y: number,
+    public x: number,
+    public y: number,
     readonly body: Body,
   ) {}
+
+  // Pick the cup up and put it down somewhere else.
+  moveTo(x: number, y: number): void {
+    this.x = x;
+    this.y = y;
+    this.body.setPosition(toMetres({ x, y }));
+  }
 
   // Is `p` (a ball's centre) down inside the cup? The ball is caught once
   // its centre drops below the rim, between the walls.
@@ -37,12 +44,13 @@ export class Cup {
 }
 
 export function createCup(world: World, x: number, y: number): Cup {
-  const body = world.createBody({ type: "static" });
+  // The outline is relative to the body, so moving the body moves the cup.
+  const body = world.createBody({
+    type: "static",
+    position: toMetres({ x, y }),
+  });
   body.createFixture({
-    shape: new ChainShape(
-      CUP_OUTLINE.map((p) => toMetres({ x: x + p.x, y: y + p.y })),
-      false,
-    ),
+    shape: new ChainShape(CUP_OUTLINE.map(toMetres), false),
     friction: 0.6,
   });
   return new Cup(x, y, body);

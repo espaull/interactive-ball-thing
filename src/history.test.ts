@@ -105,4 +105,15 @@ describe("undo history", () => {
     while (history.canUndo) history.undo();
     expect(pg.cups).toHaveLength(10);
   });
+
+  it("takes back moving something", () => {
+    const pg = new Playground();
+    pg.addCup(200, 300);
+    const history = new UndoHistory(pg);
+    pg.grabAt(200, 300)!.moveTo(600, 300);
+    pg.cups[0].caught = 2;
+    history.checkpoint();
+    history.undo();
+    expect(pg.cups[0]).toMatchObject({ x: 200, y: 300, caught: 2 });
+  });
 });

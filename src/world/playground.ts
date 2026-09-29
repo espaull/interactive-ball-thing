@@ -65,6 +65,16 @@ export class Ball {
 // Anything the camera can follow.
 export type Thing = Ball | Bubble;
 
+// A cannon, portal or cup picked up by the Move tool.
+export interface Grabbed {
+  // Where it is now, in pixels.
+  readonly x: number;
+  readonly y: number;
+  moveTo(x: number, y: number): void;
+  // Put it down.
+  drop(): void;
+}
+
 // The last (topmost) item in `list` within `slack` pixels of its edge.
 function findAt<T extends Thing>(
   list: T[],
@@ -352,6 +362,36 @@ export class Playground {
     return cup;
   }
 
+  // The cup at a point, if any. The most recently placed one wins, as it's
+  // drawn on top.
+  cupAt(x: number, y: number): Cup | null {
+    for (let i = this.cups.length - 1; i >= 0; i--) {
+      const c = this.cups[i];
+      if (Math.hypot(c.x - x, c.y - y) < CUP_RADIUS_PX) return c;
+    }
+    return null;
+  }
+
+  // --- Moving things ---
+
+  // Pick up the cannon, portal or cup at a point (checked in that order, the
+  // order they're drawn from the top), if any. A cannon holds its fire until
+  // it's put down.
+  grabAt(x: number, y: number): Grabbed | null {
+    const cannon = this.cannonAt(x, y);
+    if (cannon) {
+      cannon.aiming = true;
+      return grabbed(cannon, {
+        drop: () => (cannon.aiming = false),
+      });
+    }
+    const end = this.portalAt(x, y);
+    if (end) return grabbed(end);
+    const cup = this.cupAt(x, y);
+    if (cup) return grabbed(cup, { moveTo: (x, y) => cup.moveTo(x, y) });
+    return null;
+  }
+
   // Balls that have dropped into a cup are caught: removed and counted.
   private catchBalls(): void {
     if (this.cups.length === 0) return;
@@ -467,14 +507,19 @@ export class Playground {
   }
 
   // Put the design back to an earlier one (for Undo), leaving the balls and
-  // bubbles where they are. Cups that are still in the same place keep
-  // their count.
+  // bubbles where they are. Cups keep their count: matched in order if
+  // there are as many as before (so one that was moved keeps it), or else
+  // by where they are.
   restoreLayout(layout: Layout): void {
+    const before = this.cups.map((cup) => cup.caught);
     const key = (p: Point) => JSON.stringify(roundPoint(p));
     const caught = new Map(this.cups.map((cup) => [key(cup), cup.caught]));
     this.clearDesign();
     this.addDesign(layout);
-    for (const cup of this.cups) cup.caught = caught.get(key(cup)) ?? 0;
+    const sameCups = this.cups.length === before.length;
+    this.cups.forEach((cup, i) => {
+      cup.caught = sameCups ? before[i] : (caught.get(key(cup)) ?? 0);
+    });
   }
 
   private addDesign(layout: Layout): void {
@@ -522,4 +567,27 @@ export class Playground {
     this.bubbleBehaviour.remove(bubble);
     this.bubbles.splice(this.bubbles.indexOf(bubble), 1);
   }
+}
+
+// Something picked up. It's moved by changing its x and y, unless it needs
+// more than that.
+function grabbed(
+  thing: Point,
+  { moveTo, drop }: Partial<Pick<Grabbed, "moveTo" | "drop">> = {},
+): Grabbed {
+  return {
+    get x() {
+      return thing.x;
+    },
+    get y() {
+      return thing.y;
+    },
+    moveTo:
+      moveTo ??
+      ((x, y) => {
+        thing.x = x;
+        thing.y = y;
+      }),
+    drop: drop ?? (() => {}),
+  };
 }

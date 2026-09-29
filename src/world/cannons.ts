@@ -24,7 +24,7 @@ export interface Cannon {
   power: number;
   // Paused cannons don't fire.
   active: boolean;
-  // Being aimed right now; it holds its fire until let go.
+  // Being aimed or moved right now; it holds its fire until let go.
   aiming: boolean;
   // Playground time of its next shot.
   nextShotAt: number;
