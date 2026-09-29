@@ -127,6 +127,7 @@ export class Playground {
     this.applyBoosts();
     this.bubbleBehaviour.beforeStep(this.time);
     this.world.step(dt, 8, 3);
+    this.crossings.afterStep(this.time);
     for (const bubble of this.bubbleBehaviour.afterStep(this.time))
       this.popBubble(bubble);
     const things = [...this.balls, ...this.bubbles].map((thing) => thing.body);

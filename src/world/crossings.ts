@@ -14,14 +14,28 @@ import { PX_PER_M, toPixels } from "./units";
 // Segments this close along a line (about 50px) count as the same stretch
 // of track rather than another strand crossing it.
 const SAME_STRETCH_SEGMENTS = 8;
+// A ball that has just hopped off its track (a bump or corner at speed)
+// still counts as following it for this long (seconds).
+const RIDE_MEMORY = 0.3;
+
+// The stretch of track a ball was last rolling on.
+interface Ride {
+  line: Body;
+  segment: number;
+  time: number;
+}
 
 export class Crossings {
   // Contacts being ignored until they end. Planck reuses contact objects, so
   // entries must be removed as soon as their contact ends (see onEndContact).
   private ignored = new Set<Contact>();
+  // Where each ball was last rolling, so a ball that's briefly airborne as it
+  // reaches a crossing still passes through.
+  private lastRide = new WeakMap<Body, Ride>();
+  private time = 0;
 
   constructor(
-    world: World,
+    private world: World,
     // A line's points (in pixels), or undefined if the body isn't a line.
     private linePoints: (body: Body) => Point[] | undefined,
   ) {
@@ -31,6 +45,22 @@ export class Crossings {
 
   clear(): void {
     this.ignored.clear();
+  }
+
+  // After each physics step: remember where each ball is rolling.
+  afterStep(time: number): void {
+    this.time = time;
+    for (let c = this.world.getContactList(); c; c = c.getNext()) {
+      if (!c.isTouching() || !c.isEnabled() || this.ignored.has(c)) continue;
+      const hit = this.lineContact(c);
+      if (hit) {
+        this.lastRide.set(hit.other, {
+          line: hit.line,
+          segment: hit.segment,
+          time,
+        });
+      }
+    }
   }
 
   // Called for each touching contact, just before the solver uses it.
@@ -59,12 +89,28 @@ export class Crossings {
       const ridingSegment = this.lineContact(riding)?.segment;
       if (ridingSegment === undefined) continue;
       if (Math.abs(ridingSegment - segment) > SAME_STRETCH_SEGMENTS) {
-        this.ignored.add(contact);
-        contact.setEnabled(false);
+        this.ignore(contact);
         return;
       }
     }
+
+    // Not touching its track right now, but it was a moment ago: at speed a
+    // ball can hop off at a bump or corner just before a crossing.
+    const ride = this.lastRide.get(other);
+    if (
+      ride &&
+      ride.line === line &&
+      this.time - ride.time < RIDE_MEMORY &&
+      Math.abs(ride.segment - segment) > SAME_STRETCH_SEGMENTS
+    ) {
+      this.ignore(contact);
+    }
   };
+
+  private ignore(contact: Contact): void {
+    this.ignored.add(contact);
+    contact.setEnabled(false);
+  }
 
   private onEndContact = (contact: Contact) => {
     this.ignored.delete(contact);

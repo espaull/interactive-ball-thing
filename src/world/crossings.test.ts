@@ -102,6 +102,37 @@ describe("a line crossing itself", () => {
     expect(ball.position.y).toBeGreaterThan(floorY - 40);
   });
 
+  // Regression: at speed a ball can hop off its track at a bump or corner
+  // and reach the crossing in mid-air. It used to crash into the other
+  // strand, because it wasn't touching its own track at that moment.
+  it("lets a ball through that's briefly airborne at the crossing", () => {
+    // A steep boosted ramp straight into the loop: the ball bounces off the
+    // sharp corner at the bottom and flies into the loop.
+    const ramp: Point[] = [];
+    for (let x = X0 - 400; x <= X0; x += 6) {
+      ramp.push({ x, y: floorY - 450 * (1 - (x - (X0 - 400)) / 400) });
+    }
+    const pg = new Playground();
+    pg.addLine([...ramp, ...pigtail().slice(1)]);
+    pg.addBoost(ramp.map((p) => ({ x: p.x, y: p.y - 10 })));
+    const ball = pg.addBall(X0 - 380, floorY - 470);
+
+    let crashedAtCrossing = false;
+    let previousSpeed = 0;
+    for (let t = 0; t < 6; t += STEP) {
+      pg.step(STEP);
+      const v = ball.body.getLinearVelocity();
+      const speed = Math.hypot(v.x, v.y);
+      const p = ball.position;
+      const nearCrossing = Math.hypot(p.x - 526, p.y - 478) < 60;
+      // A sudden big loss of speed going up past the crossing is a crash.
+      if (nearCrossing && previousSpeed - speed > 6) crashedAtCrossing = true;
+      previousSpeed = speed;
+    }
+    expect(crashedAtCrossing).toBe(false);
+    expect(ball.position.x).toBeGreaterThan(loopEndX + 150);
+  });
+
   it("still lets separate lines block each other", () => {
     const pg = new Playground();
     // A floor, and a separate line crossing it like an X (a wall).
