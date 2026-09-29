@@ -69,21 +69,31 @@ describe("erasePolyline", () => {
 
   it("never keeps anything inside the eraser, or loses anything outside it", () => {
     const rand = seeded(42);
+    // Checked by hand and gathered up, as calling expect millions of times
+    // is slow enough to time out.
+    const problems: string[] = [];
     for (let n = 0; n < 2000; n++) {
       const c = { x: rand() * 320 - 10, y: 100 + (rand() - 0.5) * 50 };
       const r = 5 + rand() * 40;
       const kept = (erasePolyline(line, c, r) ?? [line]).flat();
 
-      for (const p of kept)
-        expect(Math.hypot(p.x - c.x, p.y - c.y)).toBeGreaterThan(r - 1e-6);
+      for (const p of kept) {
+        if (Math.hypot(p.x - c.x, p.y - c.y) <= r - 1e-6) {
+          problems.push(`kept ${p.x},${p.y} inside ${c.x},${c.y} r${r}`);
+        }
+      }
 
+      const keptKeys = new Set(kept.map((p) => `${p.x},${p.y}`));
       for (const p of line) {
         const outsideBy = Math.hypot(p.x - c.x, p.y - c.y) - r;
         // Points within 0.5px of a cut merge into the cut point, and scraps
         // under 4px at the very ends are dropped.
         if (outsideBy < 0.5 || p.x < 4 || p.x > 296) continue;
-        expect(kept).toContainEqual(p);
+        if (!keptKeys.has(`${p.x},${p.y}`)) {
+          problems.push(`lost ${p.x},${p.y} outside ${c.x},${c.y} r${r}`);
+        }
       }
     }
+    expect(problems).toEqual([]);
   });
 });
