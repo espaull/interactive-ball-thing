@@ -32,7 +32,6 @@ export class PortalTool implements Tool {
 
   // The first end of a pair, waiting for its partner.
   private first: PortalEnd | null = null;
-  private pairsMade = 0;
   // The portal being aimed, while the pointer is down.
   private aiming: PortalEnd | null = null;
   private target: Target = "new";
@@ -45,8 +44,16 @@ export class PortalTool implements Tool {
     return this.aiming !== null;
   }
 
+  // The first colour no pair is using, so pairs are easy to tell apart
+  // (even ones loaded from a save). Once they're all taken, they go round
+  // again.
   private get color(): string {
-    return PORTAL_COLORS[this.pairsMade % PORTAL_COLORS.length];
+    const pairs = this.ctx.playground.portalPairs;
+    const used = new Set(pairs.map((pair) => pair.color));
+    return (
+      PORTAL_COLORS.find((color) => !used.has(color)) ??
+      PORTAL_COLORS[pairs.length % PORTAL_COLORS.length]
+    );
   }
 
   down(p: Point): DownResult {
@@ -62,7 +69,6 @@ export class PortalTool implements Tool {
     } else {
       const { first } = this;
       const pair = playground.addPortalPair(first, p, this.color, first.aim);
-      this.pairsMade++;
       this.first = null;
       this.aim(pair.b, "new", p);
     }

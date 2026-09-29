@@ -27,8 +27,11 @@ Live site: https://espaull.github.io/interactive-ball-thing/ — every push to
 - `src/geometry/` — pure maths: smoothing, splines, simplification, erasing,
   line joining. Easiest code to unit-test.
 - `src/render/` — drawing; `palette.ts` holds the colours.
-- `src/ui.ts` — toolbar, hints, background picker; `main.ts` wires it all up
-  and runs the fixed-step game loop.
+- `src/ui.ts` — toolbar, hints, background picker, saves gallery; `main.ts`
+  wires it all up and runs the fixed-step game loop.
+- `src/saves.ts` — the autosave and the gallery, in `localStorage`. What's
+  saved is a `Layout` (`world/layout.ts`): the design only, no balls or
+  bubbles.
 
 ## Adding things
 
@@ -38,7 +41,10 @@ Live site: https://espaull.github.io/interactive-ball-thing/ — every push to
 - **Something in the world:** its own module in `world/`, hooked into
   `Playground.step`, `eraseAt` and `clear`. Expose callbacks (like `onCatch`)
   for effects and sounds, which `main.ts` wires to `render/effects.ts` and
-  `sound.ts` (sounds are synthesised, no audio files).
+  `sound.ts` (sounds are synthesised, no audio files). If it's part of the
+  design, add it to `Layout`, `parseLayout`, `Playground.layout`/`loadLayout`
+  and the thumbnail (`render/thumbnail.ts`). Saves already out there won't
+  have it, so parsing must cope with it missing.
 
 ## Working agreements
 

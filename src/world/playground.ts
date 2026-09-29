@@ -12,6 +12,7 @@ import {
   type Cannon,
 } from "./cannons";
 import { CUP_RADIUS_PX, Cup, createCup } from "./cups";
+import { roundPoint, type Layout } from "./layout";
 import {
   Portals,
   type PortalEnd,
@@ -433,6 +434,43 @@ export class Playground {
     const ceiling = Math.min(this.highestLineY, maxCeilingPx) - margin;
     for (const bubble of [...this.bubbles]) {
       if (bubble.position.y < ceiling) this.removeBubble(bubble);
+    }
+  }
+
+  // --- Saving and loading ---
+
+  // The playground's design, as plain data to save.
+  layout(): Layout {
+    return {
+      version: 1,
+      lines: this.lines.map((line) => line.points.map(roundPoint)),
+      boosts: this.boosts.map((boost) => boost.points.map(roundPoint)),
+      portals: this.portalPairs.map(({ a, b, color }) => ({
+        a: { ...roundPoint(a), aim: a.aim },
+        b: { ...roundPoint(b), aim: b.aim },
+        color,
+      })),
+      cups: this.cups.map(roundPoint),
+      cannons: this.cannons.map(({ x, y, angle, power, active }) => ({
+        ...roundPoint({ x, y }),
+        angle,
+        power,
+        active,
+      })),
+    };
+  }
+
+  // Replace everything with a saved design (and no balls or bubbles).
+  loadLayout(layout: Layout): void {
+    this.clear();
+    for (const points of layout.lines) this.addLine(points);
+    for (const points of layout.boosts) this.addBoost(points);
+    for (const { a, b, color } of layout.portals) {
+      this.addPortalPair(a, b, color, a.aim, b.aim);
+    }
+    for (const { x, y } of layout.cups) this.addCup(x, y);
+    for (const { x, y, angle, power, active } of layout.cannons) {
+      this.addCannon(x, y, angle, power).active = active;
     }
   }
 

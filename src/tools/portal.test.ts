@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { PORTAL_COLORS } from "../palette";
 import { Playground } from "../world/playground";
 import { PortalTool } from "./portal";
 import type { ToolContext } from "./tool";
@@ -74,5 +75,23 @@ describe("portal tool", () => {
     // That was a fresh first portal, not a partner.
     expect(playground.portalPairs).toHaveLength(0);
     expect(tool.overlay().portalPending?.end).toMatchObject({ x: 500, y: 100 });
+  });
+
+  it("gives a new pair a colour no other pair is using", () => {
+    const { playground, tool } = setUp();
+    // As if loaded from a save, with the first two colours taken.
+    playground.addPortalPair(
+      { x: 0, y: 0 },
+      { x: 100, y: 0 },
+      PORTAL_COLORS[1],
+    );
+    playground.addPortalPair(
+      { x: 0, y: 200 },
+      { x: 100, y: 200 },
+      PORTAL_COLORS[0],
+    );
+    tap(tool, 300, 300);
+    tap(tool, 600, 300);
+    expect(playground.portalPairs[2].color).toBe(PORTAL_COLORS[2]);
   });
 });

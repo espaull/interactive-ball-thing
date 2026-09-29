@@ -146,7 +146,7 @@ body {
   left: 50%;
   transform: translateX(-50%);
   width: max-content;
-  /* Leave room for the background button in the corner. */
+  /* Leave room for the buttons in the corners. */
   max-width: calc(100vw - 160px);
   margin: 0;
   padding: 6px 12px;
@@ -159,7 +159,8 @@ body {
   user-select: none;
 }
 
-#bg-button {
+#bg-button,
+#saves-button {
   position: fixed;
   right: 16px;
   bottom: calc(12px + env(safe-area-inset-bottom, 0px));
@@ -201,4 +202,129 @@ body {
 
 #bg-picker button.active {
   border-color: #3b82f6;
+}
+
+#saves-button {
+  right: auto;
+  left: 16px;
+}
+
+/* The gallery: a Save tile, then a picture of each saved playground. */
+#saves-panel {
+  position: fixed;
+  left: 16px;
+  bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100% - 180px);
+  overflow-y: auto;
+  padding: 10px;
+  background: #ffffffee;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px #0002;
+  user-select: none;
+}
+
+#saves-panel[hidden] {
+  display: none;
+}
+
+/* Up to three tiles across; fewer when there are only one or two. */
+#saves-panel .tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 132px);
+  gap: 10px;
+}
+
+#saves-panel .tiles[data-columns="1"] {
+  grid-template-columns: 132px;
+}
+
+#saves-panel .tiles[data-columns="2"] {
+  grid-template-columns: repeat(2, 132px);
+}
+
+#saves-panel .note {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: #555;
+}
+
+#saves-panel .note:empty {
+  display: none;
+}
+
+.save-tile {
+  position: relative;
+  aspect-ratio: 4 / 3;
+}
+
+.save-tile > button:first-child {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  font-size: 30px;
+  border: 3px solid #0001;
+  border-radius: 12px;
+  background: #f1efe8 center / cover no-repeat;
+  cursor: pointer;
+}
+
+.save-tile > button:first-child span {
+  font-size: 14px;
+  font-weight: 600;
+  color: #444;
+}
+
+.save-tile > button:first-child:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* The tile just saved (or already saved) gives a little bounce. */
+.save-tile.just-saved > button:first-child {
+  border-color: #3b82f6;
+  animation: saved 0.4s ease-out;
+}
+
+@keyframes saved {
+  40% {
+    transform: scale(1.08);
+  }
+}
+
+/* Remove takes two taps: the first turns the ✕ into a red bin. */
+.save-tile .remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  font-size: 13px;
+  border: none;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 6px #0003;
+  cursor: pointer;
+}
+
+.save-tile .remove.armed {
+  width: 36px;
+  height: 36px;
+  font-size: 18px;
+  background: #fecaca;
+}
+
+/* Phones: two across at most, shrinking to fit. */
+@media (max-width: 480px) {
+  #saves-panel .tiles:not([data-columns="1"]) {
+    grid-template-columns: repeat(2, minmax(0, 132px));
+  }
 }

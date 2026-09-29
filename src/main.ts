@@ -2,6 +2,7 @@ import "./style.css";
 import { Camera } from "./camera";
 import { Effects } from "./render/effects";
 import { render } from "./render/render";
+import { browserStorage, SaveStore, startAutosave } from "./saves";
 import { playCheer, playPop, playPortal, playThump } from "./sound";
 import { muzzle } from "./world/cannons";
 import { PORTAL_RADIUS_PX } from "./world/portals";
@@ -11,6 +12,7 @@ import {
   keepFocusOffButtons,
   setupActions,
   setupBackgroundPicker,
+  setupGallery,
   setupToolbar,
 } from "./ui";
 import { Playground } from "./world/playground";
@@ -56,6 +58,9 @@ keepFocusOffButtons();
 setupToolbar(toolGroups, input);
 setupActions(camera, playground, input, effects);
 const background = setupBackgroundPicker(canvas);
+const saves = new SaveStore(browserStorage());
+startAutosave(saves, playground);
+setupGallery(saves, canvas, camera, playground, input, effects, background);
 
 function resize(): void {
   const dpr = window.devicePixelRatio || 1;
