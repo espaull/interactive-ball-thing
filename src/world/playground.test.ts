@@ -79,6 +79,48 @@ describe("balls", () => {
   });
 });
 
+describe("culling", () => {
+  it("measures from the lines still there, not ones rubbed out", () => {
+    const pg = new Playground();
+    pg.world.setGravity({ x: 0, y: 0 });
+    pg.addLine([
+      { x: 0, y: 300 },
+      { x: 400, y: 300 },
+    ]);
+    pg.addLine([
+      { x: 0, y: 2000 },
+      { x: 400, y: 2000 },
+    ]);
+    // A ball well below the top line, but above the bottom one.
+    const ball = pg.addBall(200, 1500);
+    pg.cull(0, 0);
+    expect(pg.balls).toContain(ball);
+    // With the bottom line gone, nothing is below the ball to land on.
+    pg.eraseAt(200, 2000, 400);
+    pg.cull(0, 0);
+    expect(pg.balls).not.toContain(ball);
+  });
+
+  it("measures bubbles from the highest line still there", () => {
+    const pg = new Playground();
+    pg.world.setGravity({ x: 0, y: 0 });
+    pg.addLine([
+      { x: 0, y: -2000 },
+      { x: 400, y: -2000 },
+    ]);
+    pg.addLine([
+      { x: 0, y: 300 },
+      { x: 400, y: 300 },
+    ]);
+    const bubble = pg.addBubble(200, -1500);
+    pg.cull(0, 0);
+    expect(pg.bubbles).toContain(bubble);
+    pg.removeLine(pg.lines[0]);
+    pg.cull(0, 0);
+    expect(pg.bubbles).not.toContain(bubble);
+  });
+});
+
 describe("bubbles", () => {
   it("float upwards", () => {
     const pg = new Playground();

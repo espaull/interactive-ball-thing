@@ -30,3 +30,38 @@ export function polylineLength(points: Point[]): number {
     total += distance(points[i - 1], points[i]);
   return total;
 }
+
+// A rectangle, in pixels.
+export interface Box {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+// The smallest box around some points (which mustn't be empty).
+export function boundsOf(points: Point[]): Box {
+  const box = {
+    left: Infinity,
+    top: Infinity,
+    right: -Infinity,
+    bottom: -Infinity,
+  };
+  for (const { x, y } of points) {
+    box.left = Math.min(box.left, x);
+    box.top = Math.min(box.top, y);
+    box.right = Math.max(box.right, x);
+    box.bottom = Math.max(box.bottom, y);
+  }
+  return box;
+}
+
+// Could something within `reach` of `p` touch the box?
+export function isNearBox(box: Box, p: Point, reach: number): boolean {
+  return (
+    p.x > box.left - reach &&
+    p.x < box.right + reach &&
+    p.y > box.top - reach &&
+    p.y < box.bottom + reach
+  );
+}

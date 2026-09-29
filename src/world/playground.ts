@@ -1,6 +1,6 @@
 import { World, ChainShape, CircleShape, type Body } from "planck";
 import { erasePolyline } from "../geometry/erase";
-import type { Point } from "../geometry/point";
+import { boundsOf, isNearBox, type Box, type Point } from "../geometry/point";
 import { BALL_COLORS } from "../palette";
 import { BOOST_ACCELERATION, BOOST_MAX_SPEED, BoostZone } from "./boosts";
 import { Crossings } from "./crossings";
@@ -35,6 +35,7 @@ const MAX_BUBBLES = 100;
 export interface Line {
   body: Body;
   points: Point[]; // pixels, kept for drawing
+  bounds: Box;
 }
 
 // One end of a line, for continuing it.
@@ -101,9 +102,6 @@ export class Playground {
   readonly boosts: BoostZone[] = [];
   readonly cups: Cup[] = [];
   readonly cannons: Cannon[] = [];
-  // Highest and lowest points of any drawn line, in pixels.
-  private highestLineY = Infinity;
-  private lowestLineY = -Infinity;
   private time = 0;
   private lineBodies = new Set<Body>();
   // Lets balls pass through the places where a line crosses itself.
@@ -157,7 +155,11 @@ export class Playground {
 
   addLine(points: Point[]): void {
     if (points.length < 2) return;
-    this.lines.push({ body: this.createChain(points), points });
+    this.lines.push({
+      body: this.createChain(points),
+      points,
+      bounds: boundsOf(points),
+    });
   }
 
   // Give an existing line a new shape (used when a line is continued), so it
@@ -167,6 +169,7 @@ export class Playground {
     this.destroyChain(line.body);
     line.body = this.createChain(points);
     line.points = points;
+    line.bounds = boundsOf(points);
   }
 
   removeLine(line: Line): void {
@@ -180,12 +183,14 @@ export class Playground {
   // splitting them where the eraser cuts through, and any ball it touches.
   eraseAt(x: number, y: number, radius: number): void {
     for (const line of [...this.lines]) {
+      if (!isNearBox(line.bounds, { x, y }, radius)) continue;
       const pieces = erasePolyline(line.points, { x, y }, radius);
       if (!pieces) continue;
       this.removeLine(line);
       for (const piece of pieces) this.addLine(piece);
     }
     for (const boost of [...this.boosts]) {
+      if (!isNearBox(boost.bounds, { x, y }, radius)) continue;
       const pieces = erasePolyline(boost.points, { x, y }, radius);
       if (!pieces) continue;
       this.boosts.splice(this.boosts.indexOf(boost), 1);
@@ -246,10 +251,6 @@ export class Playground {
       friction: 0.6,
     });
     this.lineBodies.add(body);
-    for (const p of points) {
-      this.lowestLineY = Math.max(this.lowestLineY, p.y);
-      this.highestLineY = Math.min(this.highestLineY, p.y);
-    }
     return body;
   }
 
@@ -467,11 +468,13 @@ export class Playground {
   // otherwise drag the view (and the limit) down with it forever.
   cull(minFloorPx: number, maxCeilingPx: number): void {
     const margin = 1000;
-    const floor = Math.max(this.lowestLineY, minFloorPx) + margin;
+    const lowestLineY = Math.max(...this.lines.map((l) => l.bounds.bottom));
+    const highestLineY = Math.min(...this.lines.map((l) => l.bounds.top));
+    const floor = Math.max(lowestLineY, minFloorPx) + margin;
     for (const ball of [...this.balls]) {
       if (ball.position.y > floor) this.removeBall(ball);
     }
-    const ceiling = Math.min(this.highestLineY, maxCeilingPx) - margin;
+    const ceiling = Math.min(highestLineY, maxCeilingPx) - margin;
     for (const bubble of [...this.bubbles]) {
       if (bubble.position.y < ceiling) this.removeBubble(bubble);
     }
@@ -553,8 +556,6 @@ export class Playground {
     this.lines.length = 0;
     this.boosts.length = 0;
     this.portals.clear();
-    this.lowestLineY = -Infinity;
-    this.highestLineY = Infinity;
   }
 
   private removeBall(ball: Ball): void {

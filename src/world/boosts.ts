@@ -1,4 +1,10 @@
-import { distanceToSegment, type Point } from "../geometry/point";
+import {
+  boundsOf,
+  distanceToSegment,
+  isNearBox,
+  type Box,
+  type Point,
+} from "../geometry/point";
 
 // Half the width of a boost strip, in pixels. A ball counts as on the strip
 // when its centre is this close to the painted path. Wide enough that a
@@ -13,18 +19,10 @@ export const BOOST_MAX_SPEED = 20;
 // A painted strip that pushes balls along it, in the direction it was
 // painted. Not a physics body: nothing collides with it.
 export class BoostZone {
-  private minX = Infinity;
-  private minY = Infinity;
-  private maxX = -Infinity;
-  private maxY = -Infinity;
+  readonly bounds: Box;
 
   constructor(readonly points: Point[]) {
-    for (const p of points) {
-      this.minX = Math.min(this.minX, p.x);
-      this.minY = Math.min(this.minY, p.y);
-      this.maxX = Math.max(this.maxX, p.x);
-      this.maxY = Math.max(this.maxY, p.y);
-    }
+    this.bounds = boundsOf(points);
   }
 
   // Which way the strip points at `p` (a unit vector), or null if `p` isn't
@@ -32,14 +30,7 @@ export class BoostZone {
   directionAt(p: Point): Point | null {
     const r = BOOST_HALF_WIDTH_PX;
     // Quick reject: nowhere near the strip at all.
-    if (
-      p.x < this.minX - r ||
-      p.x > this.maxX + r ||
-      p.y < this.minY - r ||
-      p.y > this.maxY + r
-    ) {
-      return null;
-    }
+    if (!isNearBox(this.bounds, p, r)) return null;
     let best = r;
     let direction: Point | null = null;
     for (let i = 0; i < this.points.length - 1; i++) {
