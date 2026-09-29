@@ -10,7 +10,9 @@ Live site: https://espaull.github.io/interactive-ball-thing/ — every push to
 ## Commands
 
 - `npm run dev` — dev server (add `-- --host` to open it on a phone)
-- `npm test` — Vitest (the physics runs headless, no browser needed)
+- `npm test` — Vitest (the physics runs headless, no browser needed). Tests
+  that need the DOM, like `tools/input.test.ts`, start with
+  `// @vitest-environment happy-dom`; everything else runs in plain Node.
 - `npx tsc -p .` — type-check
 - `npm run format` — Prettier (default settings); `format:check` to verify
 
