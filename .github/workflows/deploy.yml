@@ -30,6 +30,7 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - run: npm run format:check
       # A failing test stops the deploy, so a broken build never goes live.
       - run: npm test
       - run: npm run build
