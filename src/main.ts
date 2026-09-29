@@ -1,5 +1,6 @@
 import "./style.css";
 import { Camera } from "./camera";
+import { UndoHistory } from "./history";
 import { Effects } from "./render/effects";
 import { render } from "./render/render";
 import { browserStorage, SaveStore, startAutosave } from "./saves";
@@ -56,11 +57,22 @@ playground.onTeleport = ({ from, to, color }) => {
 
 keepFocusOffButtons();
 setupToolbar(toolGroups, input);
-setupActions(camera, playground, input, effects);
 const background = setupBackgroundPicker(canvas);
 const saves = new SaveStore(browserStorage());
 startAutosave(saves, playground);
-setupGallery(saves, canvas, camera, playground, input, effects, background);
+// After the autosave's loaded, so Undo can't take the page back to empty.
+const history = new UndoHistory(playground);
+setupActions(camera, playground, input, effects, history);
+setupGallery(
+  saves,
+  canvas,
+  camera,
+  playground,
+  input,
+  effects,
+  background,
+  history,
+);
 
 function resize(): void {
   const dpr = window.devicePixelRatio || 1;
@@ -105,4 +117,5 @@ function frame(now: number): void {
 requestAnimationFrame(frame);
 
 // Handy for poking at things from the browser console while developing.
-if (import.meta.env.DEV) Object.assign(window, { playground, camera, input });
+if (import.meta.env.DEV)
+  Object.assign(window, { playground, camera, input, undoHistory: history });

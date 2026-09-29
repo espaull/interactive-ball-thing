@@ -43,6 +43,9 @@ export class Input {
   private panFrom: Point | null = null;
   // Holding Space pans with any tool.
   private spaceHeld = false;
+  // Called whenever something the tool was doing has finished (a press, a
+  // drag, a key, switching tools), for Undo's checkpoints.
+  onActionEnd: () => void = () => {};
 
   // Fingers on the canvas, by pointer id (screen pixels).
   private touches = new Map<number, Point>();
@@ -85,11 +88,22 @@ export class Input {
     if (tool !== this.tool) this.tool.deactivate?.();
     this.tool = tool;
     this.updateCursor();
+    this.onActionEnd();
   }
 
   // Throw away anything half-done (used by Clear).
   cancel(): void {
     this.tool.cancel?.();
+  }
+
+  // Whether the tool has something half-done for Undo to step back through.
+  get canUndoStep(): boolean {
+    return this.tool.canUndoStep ?? false;
+  }
+
+  undoStep(): void {
+    this.tool.undoStep?.();
+    this.onActionEnd();
   }
 
   // True while drawing or erasing: the camera holds still so the world
@@ -178,6 +192,8 @@ export class Input {
       this.dragging = true;
       this.pointerId = pointerId;
       this.capture(pointerId);
+    } else {
+      this.onActionEnd();
     }
   }
 
@@ -229,7 +245,10 @@ export class Input {
 
   private release(pointerId: number): void {
     if (pointerId !== this.pointerId) return;
-    if (this.dragging) this.tool.up?.();
+    if (this.dragging) {
+      this.tool.up?.();
+      this.onActionEnd();
+    }
     this.dragging = false;
     this.panFrom = null;
     this.pointerId = null;
@@ -318,7 +337,10 @@ export class Input {
       this.pending = null;
     } else if (this.pointerId !== null) {
       // A stroke already under way is thrown away, not drawn.
-      if (this.dragging) this.tool.cancel?.();
+      if (this.dragging) {
+        this.tool.cancel?.();
+        this.onActionEnd();
+      }
       this.dragging = false;
       this.panFrom = null;
       this.pointerId = null;
@@ -365,7 +387,11 @@ export class Input {
       this.updateCursor();
       return;
     }
+    // Ctrl/Cmd+Z undoes, and adding Shift (or Ctrl+Y) redoes. Those are
+    // handled with the toolbar's Undo, so they don't reach the tool.
+    if ((e.ctrlKey || e.metaKey) && /^[zy]$/i.test(e.key)) return;
     this.tool.key?.(e.key);
+    this.onActionEnd();
   };
 
   private onKeyUp = (e: KeyboardEvent) => {

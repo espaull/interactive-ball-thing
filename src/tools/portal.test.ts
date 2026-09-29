@@ -94,4 +94,16 @@ describe("portal tool", () => {
     tap(tool, 600, 300);
     expect(playground.portalPairs[2].color).toBe(PORTAL_COLORS[2]);
   });
+
+  it("lets Undo take away a portal waiting for its partner", () => {
+    const { playground, tool } = setUp();
+    expect(tool.canUndoStep).toBe(false);
+    tap(tool, 100, 100);
+    expect(tool.canUndoStep).toBe(true);
+    tool.undoStep();
+    expect(tool.overlay().portalPending).toBeNull();
+    // The next tap starts a new pair rather than finishing the old one.
+    tap(tool, 500, 100);
+    expect(playground.portalPairs).toHaveLength(0);
+  });
 });

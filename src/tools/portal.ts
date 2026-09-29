@@ -115,6 +115,15 @@ export class PortalTool implements Tool {
     this.aiming = null;
   }
 
+  // Undo takes away a portal waiting for its partner.
+  get canUndoStep(): boolean {
+    return this.first !== null;
+  }
+
+  undoStep(): void {
+    this.first = null;
+  }
+
   overlay(): Partial<Overlay> {
     return {
       portalPending: this.first && { end: this.first, color: this.color },

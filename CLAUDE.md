@@ -32,12 +32,16 @@ Live site: https://espaull.github.io/interactive-ball-thing/ — every push to
 - `src/saves.ts` — the autosave and the gallery, in `localStorage`. What's
   saved is a `Layout` (`world/layout.ts`): the design only, no balls or
   bubbles.
+- `src/history.ts` — Undo/redo: snapshots of the `Layout`, checkpointed
+  whenever `Input` says an action has ended (and after Clear and loading).
 
 ## Adding things
 
 - **A tool:** write a class implementing `Tool` in `src/tools/`, then add it
   to a group in `tools/index.ts`. The toolbar button, hint and cursor come
-  from the class. Groups with several tools open a menu.
+  from the class. Groups with several tools open a menu. A tool with
+  half-done work (like the Curve tool's points) can offer `canUndoStep` and
+  `undoStep`, which Undo steps back through before the design's history.
 - **Something in the world:** its own module in `world/`, hooked into
   `Playground.step`, `eraseAt` and `clear`. Expose callbacks (like `onCatch`)
   for effects and sounds, which `main.ts` wires to `render/effects.ts` and

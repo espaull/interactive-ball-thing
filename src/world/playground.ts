@@ -463,6 +463,21 @@ export class Playground {
   // Replace everything with a saved design (and no balls or bubbles).
   loadLayout(layout: Layout): void {
     this.clear();
+    this.addDesign(layout);
+  }
+
+  // Put the design back to an earlier one (for Undo), leaving the balls and
+  // bubbles where they are. Cups that are still in the same place keep
+  // their count.
+  restoreLayout(layout: Layout): void {
+    const key = (p: Point) => JSON.stringify(roundPoint(p));
+    const caught = new Map(this.cups.map((cup) => [key(cup), cup.caught]));
+    this.clearDesign();
+    this.addDesign(layout);
+    for (const cup of this.cups) cup.caught = caught.get(key(cup)) ?? 0;
+  }
+
+  private addDesign(layout: Layout): void {
     for (const points of layout.lines) this.addLine(points);
     for (const points of layout.boosts) this.addBoost(points);
     for (const { a, b, color } of layout.portals) {
@@ -475,20 +490,24 @@ export class Playground {
   }
 
   clear(): void {
-    for (const line of this.lines) this.world.destroyBody(line.body);
+    this.clearDesign();
     for (const ball of this.balls) this.world.destroyBody(ball.body);
     for (const bubble of this.bubbles) this.world.destroyBody(bubble.body);
+    this.balls.length = 0;
+    this.bubbles.length = 0;
+    this.bubbleBehaviour.clear();
+    this.crossings.clear();
+  }
+
+  // Remove the lines, boosts, portals, cups and cannons.
+  private clearDesign(): void {
+    for (const line of this.lines) this.destroyChain(line.body);
     for (const cup of this.cups) this.world.destroyBody(cup.body);
     this.cups.length = 0;
     this.cannons.length = 0;
     this.lines.length = 0;
-    this.balls.length = 0;
-    this.bubbles.length = 0;
     this.boosts.length = 0;
     this.portals.clear();
-    this.bubbleBehaviour.clear();
-    this.crossings.clear();
-    this.lineBodies.clear();
     this.lowestLineY = -Infinity;
     this.highestLineY = Infinity;
   }

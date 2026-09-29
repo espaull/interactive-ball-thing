@@ -59,6 +59,10 @@ export interface Tool {
   deactivate?(): void;
   // Throw away anything half-done (used by Clear).
   cancel?(): void;
+  // Whether there's something half-done that Undo should step back through
+  // first (like a curve's points), and taking that step.
+  readonly canUndoStep?: boolean;
+  undoStep?(): void;
   // `hover` is where the pointer is (null when it's off the canvas or panning).
   overlay?(hover: Point | null): Partial<Overlay>;
 }

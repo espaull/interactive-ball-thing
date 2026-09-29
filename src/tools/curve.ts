@@ -61,10 +61,19 @@ export class CurveTool implements Tool {
         break;
       case "Backspace":
       case "Delete":
-        this.points?.pop();
-        if (this.points?.length === 0) this.cancel();
+        this.undoStep();
         break;
     }
+  }
+
+  get canUndoStep(): boolean {
+    return this.points !== null;
+  }
+
+  // Take back the last point placed.
+  undoStep(): void {
+    this.points?.pop();
+    if (this.points?.length === 0) this.cancel();
   }
 
   deactivate(): void {

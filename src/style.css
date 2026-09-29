@@ -62,6 +62,15 @@ body {
   background: #e8e5da;
 }
 
+#toolbar button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+#toolbar button:disabled:hover {
+  background: #f1efe8;
+}
+
 #toolbar button.active,
 #tool-menu button.active {
   border-color: #3b82f6;
@@ -91,8 +100,9 @@ body {
   border-radius: 1px;
 }
 
-/* Narrower windows: the same buttons, smaller. */
-@media (max-width: 760px) {
+/* Narrower windows: the same buttons, smaller. (The full-size toolbar is
+   about 760px wide, plus the 16px gaps at the sides.) */
+@media (max-width: 800px) {
   #toolbar {
     gap: 3px;
     padding: 5px;
@@ -116,14 +126,18 @@ body {
     gap: 2px;
     padding: 4px;
   }
+  #toolbar button {
+    padding: 5px 2px;
+  }
   #toolbar .divider {
     margin: 6px 1px;
   }
 }
 
 /* The smallest phones: two rows. The divider becomes a line break, so the
-   tools sit on top and Follow/Home/Clear go underneath. */
-@media (max-width: 360px) {
+   tools sit on top and Follow/Home/Undo/Clear go underneath. (One row is
+   about 340px wide, plus the 16px gaps at the sides.) */
+@media (max-width: 372px) {
   #toolbar {
     flex-wrap: wrap;
     justify-content: center;

@@ -1,6 +1,7 @@
 // The HTML controls around the canvas: toolbar, hint, background picker.
 import type { Camera } from "./camera";
 import { BACKGROUNDS, makeTile, type Background } from "./render/backgrounds";
+import type { UndoHistory } from "./history";
 import type { Effects } from "./render/effects";
 import { drawThumbnail } from "./render/thumbnail";
 import type { Save, SaveStore } from "./saves";
@@ -106,12 +107,13 @@ function labelled(text: string): HTMLSpanElement {
   return span;
 }
 
-// The Follow, Home and Clear buttons.
+// The Follow, Home, Undo and Clear buttons.
 export function setupActions(
   camera: Camera,
   playground: Playground,
   input: Input,
   effects: Effects,
+  history: UndoHistory,
 ): void {
   const followButton = document.querySelector<HTMLButtonElement>("#follow")!;
   camera.onFollowChange = (following) =>
@@ -126,11 +128,43 @@ export function setupActions(
     .querySelector("#home")!
     .addEventListener("click", () => camera.home());
 
+  // Undo takes a step back through anything half-done first (like a curve's
+  // points), then through the changes to the design.
+  const undoButton = document.querySelector<HTMLButtonElement>("#undo")!;
+  const updateUndo = () =>
+    (undoButton.disabled = !input.canUndoStep && !history.canUndo);
+  const undo = () => {
+    if (input.canUndoStep) input.undoStep();
+    else history.undo();
+    updateUndo();
+  };
+  undoButton.addEventListener("click", undo);
+  input.onActionEnd = () => {
+    history.checkpoint();
+    updateUndo();
+  };
+  history.onChange = updateUndo;
+  updateUndo();
+  // Ctrl/Cmd+Z undoes; Ctrl/Cmd+Shift+Z or Ctrl+Y redoes.
+  window.addEventListener("keydown", (e) => {
+    if (!(e.ctrlKey || e.metaKey)) return;
+    const key = e.key.toLowerCase();
+    if (key === "z" && !e.shiftKey) {
+      e.preventDefault();
+      undo();
+    } else if ((key === "z" && e.shiftKey) || key === "y") {
+      e.preventDefault();
+      history.redo();
+    }
+  });
+
+  // Clearing is a step Undo can take back (the design, not the balls).
   document.querySelector("#clear")!.addEventListener("click", () => {
     input.cancel();
     playground.clear();
     effects.clear();
     camera.home();
+    history.checkpoint();
   });
 }
 
@@ -191,6 +225,7 @@ export function setupGallery(
   input: Input,
   effects: Effects,
   background: { current: Background },
+  history: UndoHistory,
 ): void {
   const button = document.querySelector<HTMLButtonElement>("#saves-button")!;
   const panel = document.querySelector<HTMLElement>("#saves-panel")!;
@@ -224,6 +259,7 @@ export function setupGallery(
     playground.loadLayout(save.layout);
     effects.clear();
     camera.home();
+    history.checkpoint();
     panel.hidden = true;
   }
 
