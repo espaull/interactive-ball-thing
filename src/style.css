@@ -217,8 +217,9 @@ body {
   box-sizing: border-box;
   width: max-content;
   max-width: calc(100vw - 32px);
-  max-height: calc(100% - 180px);
+  /* The height is fitted below the toolbar from ui.ts. */
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 10px;
   background: #ffffffee;
   border-radius: 16px;

@@ -174,6 +174,8 @@ export function setupBackgroundPicker(canvas: HTMLCanvasElement): {
   return state;
 }
 
+// Space kept between the gallery and the toolbar and 🖼️ button (CSS pixels).
+const GAP_PX = 12;
 // How long a remove button stays armed (red) waiting for its second tap.
 const REMOVE_ARMED_MS = 3000;
 
@@ -193,6 +195,7 @@ export function setupGallery(
   const button = document.querySelector<HTMLButtonElement>("#saves-button")!;
   const panel = document.querySelector<HTMLElement>("#saves-panel")!;
   const bgPicker = document.querySelector<HTMLElement>("#bg-picker")!;
+  const toolbar = document.querySelector<HTMLElement>("#toolbar")!;
   // The tile to bounce, after saving.
   let justSaved: string | null = null;
   let note = "";
@@ -250,7 +253,19 @@ export function setupGallery(
     tiles.dataset.columns = String(Math.min(3, tiles.children.length));
     panel.replaceChildren(noteEl, tiles);
     justSaved = null;
+    fit();
   }
+
+  // Fill the space between the toolbar and the 🖼️ button, and no more, so a
+  // big gallery scrolls instead of going under the toolbar.
+  function fit(): void {
+    const top = toolbar.getBoundingClientRect().bottom + GAP_PX;
+    const bottom = button.getBoundingClientRect().top - GAP_PX;
+    panel.style.maxHeight = `${Math.max(0, bottom - top)}px`;
+  }
+  window.addEventListener("resize", () => {
+    if (!panel.hidden) fit();
+  });
 
   function removeButton(s: Save): HTMLButtonElement {
     const remove = document.createElement("button");
