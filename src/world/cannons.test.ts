@@ -21,7 +21,7 @@ describe("cannons", () => {
     const pg = new Playground();
     let shots = 0;
     pg.onFire = () => shots++;
-    pg.addCannon(400, 400, -Math.PI / 4, 0.5);
+    pg.cannons.add(400, 400, -Math.PI / 4, 0.5);
     run(pg, 5.1); // shots at 0.5s, 2.5s and 4.5s
     expect(shots).toBe(3);
     expect(pg.balls).toHaveLength(3);
@@ -31,7 +31,7 @@ describe("cannons", () => {
     const pg = new Playground();
     pg.world.setGravity({ x: 0, y: 0 });
     // Straight up (y points down), full power.
-    pg.addCannon(400, 400, -Math.PI / 2, 1);
+    pg.cannons.add(400, 400, -Math.PI / 2, 1);
     run(pg, 0.6);
     const v = pg.balls[0].body.getLinearVelocity();
     expect(v.x).toBeCloseTo(0);
@@ -48,8 +48,8 @@ describe("cannons", () => {
 
   it("don't fire while paused", () => {
     const pg = new Playground();
-    const cannon = pg.addCannon(400, 400, 0, 0.5);
-    cannon.active = false;
+    const cannon = pg.cannons.add(400, 400, 0, 0.5);
+    pg.cannons.setActive(cannon, false);
     run(pg, 5);
     expect(pg.balls).toHaveLength(0);
   });
@@ -57,7 +57,7 @@ describe("cannons", () => {
   // The dotted aiming line has to show where balls really go.
   it("send balls along the predicted path", () => {
     const pg = new Playground();
-    const cannon = pg.addCannon(200, 600, -Math.PI / 3, 0.6);
+    const cannon = pg.cannons.add(200, 600, -Math.PI / 3, 0.6);
     const path = predictPath(cannon, 1.2, STEP);
     let firedAt = -1;
     let worst = 0;
@@ -81,25 +81,25 @@ describe("cannons", () => {
 
   it("can be found by tapping, and removed by the eraser and by Clear", () => {
     const pg = new Playground();
-    const first = pg.addCannon(200, 200, 0, 0.5);
-    pg.addCannon(600, 200, 0, 0.5);
-    expect(pg.cannonAt(210, 205)).toBe(first);
-    expect(pg.cannonAt(400, 400)).toBeNull();
+    const first = pg.cannons.add(200, 200, 0, 0.5);
+    pg.cannons.add(600, 200, 0, 0.5);
+    expect(pg.cannons.at(210, 205)).toBe(first);
+    expect(pg.cannons.at(400, 400)).toBeNull();
     pg.eraseAt(200, 200, 18);
-    expect(pg.cannons.map((c) => c.x)).toEqual([600]);
+    expect(pg.cannons.all.map((c) => c.x)).toEqual([600]);
     pg.clear();
-    expect(pg.cannons).toHaveLength(0);
+    expect(pg.cannons.all).toHaveLength(0);
   });
 });
 
 describe("a cannon being aimed", () => {
   it("holds its fire until it's let go", () => {
     const pg = new Playground();
-    const cannon = pg.addCannon(400, 400, 0, 0.5);
-    cannon.aiming = true;
+    const cannon = pg.cannons.add(400, 400, 0, 0.5);
+    pg.cannons.hold(cannon);
     run(pg, 5);
     expect(pg.balls).toHaveLength(0);
-    cannon.aiming = false;
+    pg.cannons.release(cannon);
     run(pg, 0.1);
     expect(pg.balls).toHaveLength(1);
   });

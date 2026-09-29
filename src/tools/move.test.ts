@@ -28,7 +28,7 @@ function run(pg: Playground, seconds: number): void {
 describe("move tool", () => {
   it("moves a cup, and it catches balls in its new place", () => {
     const { playground, tool } = setUp();
-    const cup = playground.addCup(200, 300);
+    const cup = playground.cups.add(200, 300);
     // Grabbed off-centre, it moves with the pointer without jumping to it.
     drag(tool, { x: 210, y: 290 }, { x: 610, y: 290 });
     expect(cup).toMatchObject({ x: 600, y: 300 });
@@ -41,7 +41,7 @@ describe("move tool", () => {
 
   it("moves a cannon, which holds its fire until it's put down", () => {
     const { playground, tool } = setUp();
-    const cannon = playground.addCannon(100, 100, 0, 0.5);
+    const cannon = playground.cannons.add(100, 100, 0, 0.5);
     let shots = 0;
     playground.onFire = () => shots++;
 
@@ -59,7 +59,7 @@ describe("move tool", () => {
   it("moves one end of a portal pair", () => {
     const { playground, tool } = setUp();
     playground.world.setGravity({ x: 0, y: 0 });
-    const pair = playground.addPortalPair(
+    const pair = playground.portals.add(
       { x: 100, y: 100 },
       { x: 500, y: 100 },
       "purple",
@@ -74,14 +74,14 @@ describe("move tool", () => {
 
   it("doesn't nudge things when they're just tapped", () => {
     const { playground, tool } = setUp();
-    const cup = playground.addCup(200, 300);
+    const cup = playground.cups.add(200, 300);
     drag(tool, { x: 200, y: 300 }, { x: 203, y: 302 });
     expect(cup).toMatchObject({ x: 200, y: 300 });
   });
 
   it("puts a thing back if the move is called off", () => {
     const { playground, tool } = setUp();
-    const cup = playground.addCup(200, 300);
+    const cup = playground.cups.add(200, 300);
     tool.down({ x: 200, y: 300 });
     tool.move({ x: 500, y: 300 });
     expect(tool.busy).toBe(true);

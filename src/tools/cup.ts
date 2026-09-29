@@ -18,7 +18,7 @@ export class CupTool implements Tool {
   constructor(private ctx: ToolContext) {}
 
   down(p: Point): DownResult {
-    this.ctx.playground.addCup(p.x, p.y);
+    this.ctx.playground.cups.add(p.x, p.y);
     return "none";
   }
 }

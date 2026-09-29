@@ -14,6 +14,13 @@ function run(
   }
 }
 
+function line(y: number) {
+  return [
+    { x: 0, y },
+    { x: 400, y },
+  ];
+}
+
 function staticBodyCount(playground: Playground): number {
   let count = 0;
   for (let b = playground.world.getBodyList(); b; b = b.getNext())
@@ -24,51 +31,51 @@ function staticBodyCount(playground: Playground): number {
 describe("lines", () => {
   it("erasing through the middle splits a line into two", () => {
     const pg = new Playground();
-    pg.addLine([
+    pg.lines.add([
       { x: 0, y: 100 },
       { x: 300, y: 100 },
     ]);
     pg.eraseAt(150, 100, 20);
-    expect(pg.lines).toHaveLength(2);
+    expect(pg.lines.all).toHaveLength(2);
     // The old physics body is gone; one body per piece.
     expect(staticBodyCount(pg)).toBe(2);
   });
 
   it("replacing a line's shape keeps one physics body", () => {
     const pg = new Playground();
-    pg.addLine([
+    pg.lines.add([
       { x: 0, y: 100 },
       { x: 300, y: 100 },
     ]);
-    pg.replaceLine(pg.lines[0], [
+    pg.lines.replace(pg.lines.all[0], [
       { x: 0, y: 100 },
       { x: 300, y: 150 },
     ]);
-    expect(pg.lines).toHaveLength(1);
+    expect(pg.lines.all).toHaveLength(1);
     expect(staticBodyCount(pg)).toBe(1);
   });
 
   it("finds the nearest line end, skipping an excluded line", () => {
     const pg = new Playground();
-    pg.addLine([
+    pg.lines.add([
       { x: 0, y: 0 },
       { x: 100, y: 0 },
     ]);
-    pg.addLine([
+    pg.lines.add([
       { x: 110, y: 0 },
       { x: 200, y: 0 },
     ]);
-    const [first, second] = pg.lines;
-    expect(pg.lineEndAt(104, 0, 20)?.line).toBe(first);
-    expect(pg.lineEndAt(104, 0, 20, first)?.line).toBe(second);
-    expect(pg.lineEndAt(150, 50, 20)).toBeNull();
+    const [first, second] = pg.lines.all;
+    expect(pg.lines.endAt(104, 0, 20)?.line).toBe(first);
+    expect(pg.lines.endAt(104, 0, 20, first)?.line).toBe(second);
+    expect(pg.lines.endAt(150, 50, 20)).toBeNull();
   });
 });
 
 describe("balls", () => {
   it("fall and land on a line", () => {
     const pg = new Playground();
-    pg.addLine([
+    pg.lines.add([
       { x: 0, y: 400 },
       { x: 800, y: 400 },
     ]);
@@ -79,15 +86,52 @@ describe("balls", () => {
   });
 });
 
+describe("the design's revision", () => {
+  it("goes up with every change to the design, and not otherwise", () => {
+    const pg = new Playground();
+    let changes = 0;
+    pg.onDesignChange = () => changes++;
+    const changed = (change: () => void) => {
+      const before = pg.revision;
+      change();
+      return pg.revision > before;
+    };
+    expect(changed(() => pg.lines.add(line(300)))).toBe(true);
+    expect(changed(() => pg.boosts.add(line(290)))).toBe(true);
+    const pair = pg.portals.add({ x: 0, y: 0 }, { x: 500, y: 0 }, "purple");
+    expect(changed(() => pg.portals.aim(pair.a, 1))).toBe(true);
+    const cannon = pg.cannons.add(100, 100, 0, 0.5);
+    expect(changed(() => pg.cannons.aim(cannon, 1, 1))).toBe(true);
+    expect(changed(() => pg.cannons.setActive(cannon, false))).toBe(true);
+    pg.cups.add(700, 700);
+    expect(changed(() => pg.grabAt(700, 700)!.moveTo(800, 700))).toBe(true);
+    expect(changed(() => pg.eraseAt(800, 700, 10))).toBe(true);
+    expect(changed(() => pg.clear())).toBe(true);
+    expect(changes).toBeGreaterThan(0);
+
+    // Balls, bubbles and holding a cannon's fire aren't the design.
+    const held = pg.cannons.add(100, 100, 0, 0.5);
+    expect(
+      changed(() => {
+        pg.addBall(10, 10);
+        pg.addBubble(20, 20);
+        pg.cannons.hold(held);
+        pg.cannons.release(held, 0.3);
+        pg.step(1 / 60);
+      }),
+    ).toBe(false);
+  });
+});
+
 describe("culling", () => {
   it("measures from the lines still there, not ones rubbed out", () => {
     const pg = new Playground();
     pg.world.setGravity({ x: 0, y: 0 });
-    pg.addLine([
+    pg.lines.add([
       { x: 0, y: 300 },
       { x: 400, y: 300 },
     ]);
-    pg.addLine([
+    pg.lines.add([
       { x: 0, y: 2000 },
       { x: 400, y: 2000 },
     ]);
@@ -104,18 +148,18 @@ describe("culling", () => {
   it("measures bubbles from the highest line still there", () => {
     const pg = new Playground();
     pg.world.setGravity({ x: 0, y: 0 });
-    pg.addLine([
+    pg.lines.add([
       { x: 0, y: -2000 },
       { x: 400, y: -2000 },
     ]);
-    pg.addLine([
+    pg.lines.add([
       { x: 0, y: 300 },
       { x: 400, y: 300 },
     ]);
     const bubble = pg.addBubble(200, -1500);
     pg.cull(0, 0);
     expect(pg.bubbles).toContain(bubble);
-    pg.removeLine(pg.lines[0]);
+    pg.lines.remove(pg.lines.all[0]);
     pg.cull(0, 0);
     expect(pg.bubbles).not.toContain(bubble);
   });
@@ -133,7 +177,7 @@ describe("bubbles", () => {
     const pg = new Playground();
     let pops = 0;
     pg.onPop = () => pops++;
-    pg.addLine([
+    pg.lines.add([
       { x: 0, y: 200 },
       { x: 800, y: 200 },
     ]);
@@ -169,7 +213,7 @@ describe("bubbles", () => {
       x: a.x + ((c.x - a.x) * i) / 100,
       y: a.y + ((c.y - a.y) * i) / 100,
     }));
-    pg.addLine(points);
+    pg.lines.add(points);
     const bubble = pg.addBubble(a.x + 40, a.y - 30);
     // No bouncing, and a steady push into the slope, so it slides.
     bubble.body.getFixtureList()!.setRestitution(0);
@@ -213,11 +257,11 @@ describe("boost strips", () => {
 
   it("push a resting ball along the way they were painted", () => {
     const pg = new Playground();
-    pg.addLine([
+    pg.lines.add([
       { x: 0, y: 400 },
       { x: 2000, y: 400 },
     ]);
-    pg.addBoost([
+    pg.boosts.add([
       { x: 100, y: 390 },
       { x: 600, y: 390 },
     ]);
@@ -229,7 +273,7 @@ describe("boost strips", () => {
   it("can lift a ball straight up against gravity", () => {
     const pg = new Playground();
     // Painted bottom to top.
-    pg.addBoost([
+    pg.boosts.add([
       { x: 400, y: 600 },
       { x: 400, y: 100 },
     ]);
@@ -240,11 +284,11 @@ describe("boost strips", () => {
 
   it("stop pushing at top speed", () => {
     const pg = new Playground();
-    pg.addLine([
+    pg.lines.add([
       { x: 0, y: 400 },
       { x: 40000, y: 400 },
     ]);
-    pg.addBoost([
+    pg.boosts.add([
       { x: 0, y: 390 },
       { x: 40000, y: 390 },
     ]);
@@ -256,12 +300,12 @@ describe("boost strips", () => {
 
   it("slow a ball down when painted against it", () => {
     const pg = new Playground();
-    pg.addLine([
+    pg.lines.add([
       { x: 0, y: 400 },
       { x: 4000, y: 400 },
     ]);
     // Pointing left, while the ball heads right.
-    pg.addBoost([
+    pg.boosts.add([
       { x: 900, y: 390 },
       { x: 300, y: 390 },
     ]);
@@ -273,13 +317,13 @@ describe("boost strips", () => {
 
   it("are rubbed out by the eraser, keeping their direction", () => {
     const pg = new Playground();
-    pg.addBoost([
+    pg.boosts.add([
       { x: 0, y: 100 },
       { x: 300, y: 100 },
     ]);
     pg.eraseAt(150, 100, 20);
-    expect(pg.boosts).toHaveLength(2);
-    for (const boost of pg.boosts) {
+    expect(pg.boosts.all).toHaveLength(2);
+    for (const boost of pg.boosts.all) {
       expect(boost.points.at(-1)!.x).toBeGreaterThan(boost.points[0].x);
     }
   });
@@ -302,7 +346,7 @@ describe("boost strips", () => {
           y: centre.y + R * Math.cos(a),
         });
       }
-      pg.addLine(points);
+      pg.lines.add(points);
     }
     // Did the ball make it over the top and into the upper-left of the loop?
     function wentOverTheTop(pg: Playground, seconds: number): boolean {
@@ -317,7 +361,7 @@ describe("boost strips", () => {
     it("a boosted ball goes all the way round", () => {
       const pg = new Playground();
       loopTrack(pg);
-      pg.addBoost([
+      pg.boosts.add([
         { x: 50, y: 590 },
         { x: 580, y: 590 },
       ]);

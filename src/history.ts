@@ -11,13 +11,17 @@ export class UndoHistory {
   // Earlier designs (as JSON), oldest first, and ones undone.
   private undoStack: string[] = [];
   private redoStack: string[] = [];
-  // The design as of the last checkpoint.
+  // The design as of the last checkpoint, and the playground's revision
+  // then (if that hasn't moved, nothing's changed and there's no need to
+  // look).
   private current: string;
+  private seen: number;
   // Called whenever what can be undone or redone changes.
   onChange: () => void = () => {};
 
   constructor(private playground: Playground) {
     this.current = this.snapshot();
+    this.seen = playground.revision;
   }
 
   get canUndo(): boolean {
@@ -31,6 +35,10 @@ export class UndoHistory {
   // Call when an action has finished: if the design changed, that's a step
   // Undo can take back.
   checkpoint(): void {
+    if (this.playground.revision === this.seen) return;
+    this.seen = this.playground.revision;
+    // It may have changed and changed back (like a cannon paused and
+    // restarted), which isn't a step.
     const now = this.snapshot();
     if (now === this.current) return;
     this.undoStack.push(this.current);
@@ -59,6 +67,7 @@ export class UndoHistory {
   private restore(json: string): void {
     this.playground.restoreLayout(JSON.parse(json) as Layout);
     this.current = json;
+    this.seen = this.playground.revision;
     this.onChange();
   }
 

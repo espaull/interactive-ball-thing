@@ -21,6 +21,6 @@ describe("curve tool", () => {
     // Every point taken back: no curve left to finish.
     expect(tool.canUndoStep).toBe(false);
     tool.key("Enter");
-    expect(playground.lines).toHaveLength(0);
+    expect(playground.lines.all).toHaveLength(0);
   });
 });

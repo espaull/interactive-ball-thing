@@ -46,7 +46,7 @@ export class BoostTool implements Tool {
 
   up(): void {
     // Smoothed like a drawn line, so the push direction changes smoothly too.
-    if (this.stroke) this.ctx.playground.addBoost(smoothStroke(this.stroke));
+    if (this.stroke) this.ctx.playground.boosts.add(smoothStroke(this.stroke));
     this.cancel();
   }
 

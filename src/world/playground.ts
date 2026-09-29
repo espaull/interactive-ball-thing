@@ -1,49 +1,28 @@
-import { World, ChainShape, CircleShape, type Body } from "planck";
-import { erasePolyline } from "../geometry/erase";
-import { boundsOf, isNearBox, type Box, type Point } from "../geometry/point";
+import { World, CircleShape, type Body } from "planck";
+import type { Box, Point } from "../geometry/point";
 import { BALL_COLORS } from "../palette";
-import { BOOST_ACCELERATION, BOOST_MAX_SPEED, BoostZone } from "./boosts";
-import { Crossings } from "./crossings";
-import {
-  CANNON_INTERVAL,
-  CANNON_RADIUS_PX,
-  launchVelocity,
-  muzzle,
-  type Cannon,
-} from "./cannons";
-import { CUP_RADIUS_PX, Cup, createCup } from "./cups";
-import { roundPoint, type Layout } from "./layout";
-import {
-  Portals,
-  type PortalEnd,
-  type PortalPair,
-  type Teleport,
-} from "./portals";
+import { Boosts } from "./boosts";
 import { Bubble, BubbleBehaviour, createBubble } from "./bubbles";
+import { Cannons, launchVelocity, muzzle, type Cannon } from "./cannons";
+import { Crossings } from "./crossings";
+import { Cups, type Cup } from "./cups";
+import type { Layout } from "./layout";
+import { Lines } from "./lines";
+import type { Grabbed, Part } from "./part";
+import { Portals, type Teleport } from "./portals";
 import { PX_PER_M, toMetres, toPixels } from "./units";
 
 export { BoostZone } from "./boosts";
+export { Bubble } from "./bubbles";
 export type { Cannon } from "./cannons";
 export { Cup } from "./cups";
+export type { Line, LineEnd } from "./lines";
+export type { Grabbed } from "./part";
 export type { PortalEnd, PortalPair, Teleport } from "./portals";
-export { Bubble } from "./bubbles";
 
 const BALL_RADIUS_M = 0.4;
 const MAX_BALLS = 200;
 const MAX_BUBBLES = 100;
-
-export interface Line {
-  body: Body;
-  points: Point[]; // pixels, kept for drawing
-  bounds: Box;
-}
-
-// One end of a line, for continuing it.
-export interface LineEnd {
-  line: Line;
-  atStart: boolean;
-  point: Point;
-}
 
 export class Ball {
   constructor(
@@ -66,16 +45,6 @@ export class Ball {
 // Anything the camera can follow.
 export type Thing = Ball | Bubble;
 
-// A cannon, portal or cup picked up by the Move tool.
-export interface Grabbed {
-  // Where it is now, in pixels.
-  readonly x: number;
-  readonly y: number;
-  moveTo(x: number, y: number): void;
-  // Put it down.
-  drop(): void;
-}
-
 // The last (topmost) item in `list` within `slack` pixels of its edge.
 function findAt<T extends Thing>(
   list: T[],
@@ -91,26 +60,49 @@ function findAt<T extends Thing>(
   return null;
 }
 
-// Everything in the world: the physics simulation plus the lines, balls and
-// bubbles in it. Positions in and out are in pixels.
+// Everything in the world: the physics simulation, the design (lines, boost
+// strips, portals, cups and cannons, each kept by its own part), and the
+// balls and bubbles. Positions in and out are in pixels.
 export class Playground {
   // y grows downwards, matching screen coordinates.
   readonly world = new World({ gravity: { x: 0, y: 10 } });
-  readonly lines: Line[] = [];
   readonly balls: Ball[] = [];
   readonly bubbles: Bubble[] = [];
-  readonly boosts: BoostZone[] = [];
-  readonly cups: Cup[] = [];
-  readonly cannons: Cannon[] = [];
   private time = 0;
-  private lineBodies = new Set<Body>();
+
+  // Goes up by one whenever the design changes, so Undo can tell cheaply
+  // whether anything did.
+  revision = 0;
+  // Called whenever the design changes (for the autosave).
+  onDesignChange: () => void = () => {};
+  private changed = () => {
+    this.revision++;
+    this.onDesignChange();
+  };
+
+  // The design's parts. To add a kind of thing, write a Part for it, add it
+  // here and to `parts`, `Layout` (with its parser) and `drawDesign`.
+  readonly lines = new Lines(this.world, this.changed);
+  readonly boosts = new Boosts(this.changed);
+  readonly portals = new Portals(this.changed);
+  readonly cups = new Cups(this.world, this.changed);
+  readonly cannons = new Cannons(() => this.time, this.changed);
+  // From the top down, as they're drawn, so what's picked up is what's on
+  // top.
+  private readonly parts: Part<unknown>[] = [
+    this.cannons,
+    this.portals,
+    this.cups,
+    this.boosts,
+    this.lines,
+  ];
+
   // Lets balls pass through the places where a line crosses itself.
-  private crossings = new Crossings(
-    this.world,
-    (body) => this.lines.find((line) => line.body === body)?.points,
+  private crossings = new Crossings(this.world, (body) =>
+    this.lines.pointsOf(body),
   );
   private bubbleBehaviour = new BubbleBehaviour(this.world, (body) =>
-    this.lineBodies.has(body),
+    this.lines.has(body),
   );
 
   // Called whenever a bubble pops (clicked or bumped too often), for the
@@ -123,13 +115,6 @@ export class Playground {
   // Called whenever a cannon fires, for the puff and thump.
   onFire: (cannon: Cannon) => void = () => {};
 
-  private portals = new Portals();
-
-  // Every pair of portals.
-  get portalPairs(): readonly PortalPair[] {
-    return this.portals.pairs;
-  }
-
   // Seconds of simulation so far.
   get now(): number {
     return this.time;
@@ -138,7 +123,7 @@ export class Playground {
   step(dt: number): void {
     this.time += dt;
     this.fireCannons();
-    this.applyBoosts();
+    this.boosts.push(this.balls.map((ball) => ball.body));
     this.bubbleBehaviour.beforeStep(this.time);
     this.world.step(dt, 8, 3);
     this.crossings.afterStep(this.time);
@@ -151,67 +136,12 @@ export class Playground {
     this.catchBalls();
   }
 
-  // --- Lines ---
+  // --- The design ---
 
-  addLine(points: Point[]): void {
-    if (points.length < 2) return;
-    this.lines.push({
-      body: this.createChain(points),
-      points,
-      bounds: boundsOf(points),
-    });
-  }
-
-  // Give an existing line a new shape (used when a line is continued), so it
-  // stays one smooth chain with no bump at the join.
-  replaceLine(line: Line, points: Point[]): void {
-    if (points.length < 2) return;
-    this.destroyChain(line.body);
-    line.body = this.createChain(points);
-    line.points = points;
-    line.bounds = boundsOf(points);
-  }
-
-  removeLine(line: Line): void {
-    const index = this.lines.indexOf(line);
-    if (index === -1) return;
-    this.destroyChain(line.body);
-    this.lines.splice(index, 1);
-  }
-
-  // Rub out every part of every line and boost strip inside a circle,
-  // splitting them where the eraser cuts through, and any ball it touches.
+  // Rub out every part of the design inside a circle (splitting lines and
+  // boost strips where the eraser cuts through), and any ball it touches.
   eraseAt(x: number, y: number, radius: number): void {
-    for (const line of [...this.lines]) {
-      if (!isNearBox(line.bounds, { x, y }, radius)) continue;
-      const pieces = erasePolyline(line.points, { x, y }, radius);
-      if (!pieces) continue;
-      this.removeLine(line);
-      for (const piece of pieces) this.addLine(piece);
-    }
-    for (const boost of [...this.boosts]) {
-      if (!isNearBox(boost.bounds, { x, y }, radius)) continue;
-      const pieces = erasePolyline(boost.points, { x, y }, radius);
-      if (!pieces) continue;
-      this.boosts.splice(this.boosts.indexOf(boost), 1);
-      // Pieces keep the order of the points, so they still point the same way.
-      for (const piece of pieces) this.addBoost(piece);
-    }
-    // A portal it touches goes, along with its partner.
-    this.portals.removeNear(x, y, radius);
-    // And any cannon.
-    for (const cannon of [...this.cannons]) {
-      if (Math.hypot(cannon.x - x, cannon.y - y) < radius + CANNON_RADIUS_PX) {
-        this.cannons.splice(this.cannons.indexOf(cannon), 1);
-      }
-    }
-    // So does any cup it touches.
-    for (const cup of [...this.cups]) {
-      if (Math.hypot(cup.x - x, cup.y - y) < radius + CUP_RADIUS_PX) {
-        this.world.destroyBody(cup.body);
-        this.cups.splice(this.cups.indexOf(cup), 1);
-      }
-    }
+    for (const part of this.parts) part.eraseAt(x, y, radius);
     // Balls it touches go too (handy for one stuck on a track).
     for (const ball of [...this.balls]) {
       const { x: bx, y: by } = ball.position;
@@ -220,184 +150,77 @@ export class Playground {
     }
   }
 
-  // The line end closest to a point, within `radius` pixels, ignoring the
-  // ends of `except`.
-  lineEndAt(
-    x: number,
-    y: number,
-    radius: number,
-    except?: Line,
-  ): LineEnd | null {
-    let best: LineEnd | null = null;
-    let bestDistance = radius;
-    for (const line of this.lines) {
-      if (line === except) continue;
-      for (const atStart of [true, false]) {
-        const point = atStart ? line.points[0] : line.points.at(-1)!;
-        const distance = Math.hypot(point.x - x, point.y - y);
-        if (distance <= bestDistance) {
-          best = { line, atStart, point };
-          bestDistance = distance;
-        }
-      }
-    }
-    return best;
-  }
-
-  private createChain(points: Point[]): Body {
-    const body = this.world.createBody({ type: "static" });
-    body.createFixture({
-      shape: new ChainShape(points.map(toMetres), false),
-      friction: 0.6,
-    });
-    this.lineBodies.add(body);
-    return body;
-  }
-
-  private destroyChain(body: Body): void {
-    this.lineBodies.delete(body);
-    this.world.destroyBody(body);
-  }
-
-  // --- Boost strips ---
-
-  // A strip along `points`, pushing balls in the direction they run.
-  addBoost(points: Point[]): void {
-    if (points.length < 2) return;
-    this.boosts.push(new BoostZone(points));
-  }
-
-  // Push each ball that's on a strip along it, until it reaches top speed.
-  // Only one strip pushes a ball at a time, so overlapping strips don't add up.
-  private applyBoosts(): void {
-    if (this.boosts.length === 0) return;
-    for (const ball of this.balls) {
-      const position = ball.position;
-      for (const boost of this.boosts) {
-        const dir = boost.directionAt(position);
-        if (!dir) continue;
-        const v = ball.body.getLinearVelocity();
-        if (v.x * dir.x + v.y * dir.y < BOOST_MAX_SPEED) {
-          const push = ball.body.getMass() * BOOST_ACCELERATION;
-          ball.body.applyForceToCenter(
-            { x: dir.x * push, y: dir.y * push },
-            true,
-          );
-        }
-        break;
-      }
-    }
-  }
-
-  // --- Portals ---
-
-  // A linked pair of portals at `a` and `b`. Each end's `aim` is which way
-  // things come out of it (radians), or null to carry straight on.
-  addPortalPair(
-    a: Point,
-    b: Point,
-    color: string,
-    aimA: number | null = null,
-    aimB: number | null = null,
-  ): PortalPair {
-    const pair = {
-      a: { x: a.x, y: a.y, aim: aimA },
-      b: { x: b.x, y: b.y, aim: aimB },
-      color,
-    };
-    this.portals.add(pair);
-    return pair;
-  }
-
-  // The portal end at a point (with a little slack for fingers), if any.
-  portalAt(x: number, y: number): PortalEnd | null {
-    return this.portals.endAt(x, y, 6);
-  }
-
-  // --- Cannons ---
-
-  // A cannon at (x, y) firing along `angle` with `power` (0 to 1). Its first
-  // shot comes shortly after it's placed.
-  addCannon(x: number, y: number, angle: number, power: number): Cannon {
-    const cannon = {
-      x,
-      y,
-      angle,
-      power,
-      active: true,
-      aiming: false,
-      nextShotAt: this.time + 0.5,
-    };
-    this.cannons.push(cannon);
-    return cannon;
-  }
-
-  // The cannon at a point (with a little slack for fingers), if any.
-  cannonAt(x: number, y: number): Cannon | null {
-    // The most recently placed one wins, as it's drawn on top.
-    for (let i = this.cannons.length - 1; i >= 0; i--) {
-      const c = this.cannons[i];
-      if (Math.hypot(c.x - x, c.y - y) < CANNON_RADIUS_PX + 6) return c;
+  // Pick up whatever's on top at a point to move it (a cannon, portal or
+  // cup), if anything. A cannon holds its fire until it's put down.
+  grabAt(x: number, y: number): Grabbed | null {
+    for (const part of this.parts) {
+      const grabbed = part.grabAt?.(x, y);
+      if (grabbed) return grabbed;
     }
     return null;
+  }
+
+  get hasDesign(): boolean {
+    return this.parts.some((part) => !part.isEmpty);
+  }
+
+  // The area the design covers, or null if there's nothing.
+  designBounds(): Box | null {
+    let box: Box | null = null;
+    const add = ({ x, y }: Point, reach: number) => {
+      box ??= { left: x, top: y, right: x, bottom: y };
+      box.left = Math.min(box.left, x - reach);
+      box.top = Math.min(box.top, y - reach);
+      box.right = Math.max(box.right, x + reach);
+      box.bottom = Math.max(box.bottom, y + reach);
+    };
+    for (const part of this.parts) part.extent(add);
+    return box;
+  }
+
+  // The design, as plain data to save.
+  layout(): Layout {
+    return {
+      version: 1,
+      lines: this.lines.save(),
+      boosts: this.boosts.save(),
+      portals: this.portals.save(),
+      cups: this.cups.save(),
+      cannons: this.cannons.save(),
+    };
+  }
+
+  // Replace everything with a saved design (and no balls or bubbles).
+  loadLayout(layout: Layout): void {
+    this.clear();
+    this.restoreLayout(layout);
+  }
+
+  // Put the design back to an earlier one (for Undo), leaving the balls and
+  // bubbles where they are.
+  restoreLayout(layout: Layout): void {
+    this.lines.load(layout.lines);
+    this.boosts.load(layout.boosts);
+    this.portals.load(layout.portals);
+    this.cups.load(layout.cups);
+    this.cannons.load(layout.cannons);
   }
 
   // Fire every cannon whose next shot is due.
   private fireCannons(): void {
-    for (const cannon of this.cannons) {
-      if (!cannon.active || cannon.aiming) continue;
-      if (this.time < cannon.nextShotAt) continue;
+    for (const cannon of this.cannons.due()) {
       const { x, y } = muzzle(cannon);
       const ball = this.addBall(x, y);
       ball.body.setLinearVelocity(toMetres(launchVelocity(cannon)));
-      cannon.nextShotAt = this.time + CANNON_INTERVAL;
       this.onFire(cannon);
     }
   }
 
-  // --- Goal cups ---
-
-  addCup(x: number, y: number): Cup {
-    const cup = createCup(this.world, x, y);
-    this.cups.push(cup);
-    return cup;
-  }
-
-  // The cup at a point, if any. The most recently placed one wins, as it's
-  // drawn on top.
-  cupAt(x: number, y: number): Cup | null {
-    for (let i = this.cups.length - 1; i >= 0; i--) {
-      const c = this.cups[i];
-      if (Math.hypot(c.x - x, c.y - y) < CUP_RADIUS_PX) return c;
-    }
-    return null;
-  }
-
-  // --- Moving things ---
-
-  // Pick up the cannon, portal or cup at a point (checked in that order, the
-  // order they're drawn from the top), if any. A cannon holds its fire until
-  // it's put down.
-  grabAt(x: number, y: number): Grabbed | null {
-    const cannon = this.cannonAt(x, y);
-    if (cannon) {
-      cannon.aiming = true;
-      return grabbed(cannon, {
-        drop: () => (cannon.aiming = false),
-      });
-    }
-    const end = this.portalAt(x, y);
-    if (end) return grabbed(end);
-    const cup = this.cupAt(x, y);
-    if (cup) return grabbed(cup, { moveTo: (x, y) => cup.moveTo(x, y) });
-    return null;
-  }
-
   // Balls that have dropped into a cup are caught: removed and counted.
   private catchBalls(): void {
-    if (this.cups.length === 0) return;
+    if (this.cups.isEmpty) return;
     for (const ball of [...this.balls]) {
-      const cup = this.cups.find((c) => c.catches(ball.position));
+      const cup = this.cups.catching(ball.position);
       if (!cup) continue;
       this.removeBall(ball);
       cup.caught++;
@@ -468,94 +291,24 @@ export class Playground {
   // otherwise drag the view (and the limit) down with it forever.
   cull(minFloorPx: number, maxCeilingPx: number): void {
     const margin = 1000;
-    const lowestLineY = Math.max(...this.lines.map((l) => l.bounds.bottom));
-    const highestLineY = Math.min(...this.lines.map((l) => l.bounds.top));
-    const floor = Math.max(lowestLineY, minFloorPx) + margin;
+    const floor = Math.max(this.lines.bottom, minFloorPx) + margin;
     for (const ball of [...this.balls]) {
       if (ball.position.y > floor) this.removeBall(ball);
     }
-    const ceiling = Math.min(highestLineY, maxCeilingPx) - margin;
+    const ceiling = Math.min(this.lines.top, maxCeilingPx) - margin;
     for (const bubble of [...this.bubbles]) {
       if (bubble.position.y < ceiling) this.removeBubble(bubble);
     }
   }
 
-  // --- Saving and loading ---
-
-  // The playground's design, as plain data to save.
-  layout(): Layout {
-    return {
-      version: 1,
-      lines: this.lines.map((line) => line.points.map(roundPoint)),
-      boosts: this.boosts.map((boost) => boost.points.map(roundPoint)),
-      portals: this.portalPairs.map(({ a, b, color }) => ({
-        a: { ...roundPoint(a), aim: a.aim },
-        b: { ...roundPoint(b), aim: b.aim },
-        color,
-      })),
-      cups: this.cups.map(roundPoint),
-      cannons: this.cannons.map(({ x, y, angle, power, active }) => ({
-        ...roundPoint({ x, y }),
-        angle,
-        power,
-        active,
-      })),
-    };
-  }
-
-  // Replace everything with a saved design (and no balls or bubbles).
-  loadLayout(layout: Layout): void {
-    this.clear();
-    this.addDesign(layout);
-  }
-
-  // Put the design back to an earlier one (for Undo), leaving the balls and
-  // bubbles where they are. Cups keep their count: matched in order if
-  // there are as many as before (so one that was moved keeps it), or else
-  // by where they are.
-  restoreLayout(layout: Layout): void {
-    const before = this.cups.map((cup) => cup.caught);
-    const key = (p: Point) => JSON.stringify(roundPoint(p));
-    const caught = new Map(this.cups.map((cup) => [key(cup), cup.caught]));
-    this.clearDesign();
-    this.addDesign(layout);
-    const sameCups = this.cups.length === before.length;
-    this.cups.forEach((cup, i) => {
-      cup.caught = sameCups ? before[i] : (caught.get(key(cup)) ?? 0);
-    });
-  }
-
-  private addDesign(layout: Layout): void {
-    for (const points of layout.lines) this.addLine(points);
-    for (const points of layout.boosts) this.addBoost(points);
-    for (const { a, b, color } of layout.portals) {
-      this.addPortalPair(a, b, color, a.aim, b.aim);
-    }
-    for (const { x, y } of layout.cups) this.addCup(x, y);
-    for (const { x, y, angle, power, active } of layout.cannons) {
-      this.addCannon(x, y, angle, power).active = active;
-    }
-  }
-
   clear(): void {
-    this.clearDesign();
+    for (const part of this.parts) part.clear();
     for (const ball of this.balls) this.world.destroyBody(ball.body);
     for (const bubble of this.bubbles) this.world.destroyBody(bubble.body);
     this.balls.length = 0;
     this.bubbles.length = 0;
     this.bubbleBehaviour.clear();
     this.crossings.clear();
-  }
-
-  // Remove the lines, boosts, portals, cups and cannons.
-  private clearDesign(): void {
-    for (const line of this.lines) this.destroyChain(line.body);
-    for (const cup of this.cups) this.world.destroyBody(cup.body);
-    this.cups.length = 0;
-    this.cannons.length = 0;
-    this.lines.length = 0;
-    this.boosts.length = 0;
-    this.portals.clear();
   }
 
   private removeBall(ball: Ball): void {
@@ -568,27 +321,4 @@ export class Playground {
     this.bubbleBehaviour.remove(bubble);
     this.bubbles.splice(this.bubbles.indexOf(bubble), 1);
   }
-}
-
-// Something picked up. It's moved by changing its x and y, unless it needs
-// more than that.
-function grabbed(
-  thing: Point,
-  { moveTo, drop }: Partial<Pick<Grabbed, "moveTo" | "drop">> = {},
-): Grabbed {
-  return {
-    get x() {
-      return thing.x;
-    },
-    get y() {
-      return thing.y;
-    },
-    moveTo:
-      moveTo ??
-      ((x, y) => {
-        thing.x = x;
-        thing.y = y;
-      }),
-    drop: drop ?? (() => {}),
-  };
 }

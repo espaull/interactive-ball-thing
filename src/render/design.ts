@@ -30,7 +30,7 @@ export function drawDesign(
   time: number,
   lineWidth = LINE_WIDTH_PX,
 ): void {
-  for (const boost of playground.boosts) {
+  for (const boost of playground.boosts.all) {
     drawBoostStrip(ctx, boost.points, time);
   }
 
@@ -38,12 +38,12 @@ export function drawDesign(
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   ctx.strokeStyle = LINE_COLOR;
-  for (const line of playground.lines) drawPolyline(ctx, line.points);
+  for (const line of playground.lines.all) drawPolyline(ctx, line.points);
 
-  for (const cup of playground.cups) drawCup(ctx, cup);
-  for (const { a, b, color } of playground.portalPairs) {
+  for (const cup of playground.cups.all) drawCup(ctx, cup);
+  for (const { a, b, color } of playground.portals.pairs) {
     drawPortal(ctx, a, color, time);
     drawPortal(ctx, b, color, time);
   }
-  for (const cannon of playground.cannons) drawCannon(ctx, cannon);
+  for (const cannon of playground.cannons.all) drawCannon(ctx, cannon);
 }

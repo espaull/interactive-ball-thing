@@ -31,9 +31,9 @@ describe("portal tool", () => {
   it("places unaimed pairs with taps", () => {
     const { playground, tool } = setUp();
     tap(tool, 100, 100);
-    expect(playground.portalPairs).toHaveLength(0);
+    expect(playground.portals.pairs).toHaveLength(0);
     tap(tool, 500, 100);
-    const [pair] = playground.portalPairs;
+    const [pair] = playground.portals.pairs;
     expect(pair.a).toEqual({ x: 100, y: 100, aim: null });
     expect(pair.b).toEqual({ x: 500, y: 100, aim: null });
   });
@@ -42,7 +42,7 @@ describe("portal tool", () => {
     const { playground, tool } = setUp();
     drag(tool, 100, 100, 100, 50); // up
     drag(tool, 500, 100, 450, 100); // left
-    const [pair] = playground.portalPairs;
+    const [pair] = playground.portals.pairs;
     expect(pair.a.aim).toBeCloseTo(-Math.PI / 2);
     expect(pair.b.aim).toBeCloseTo(Math.PI);
     expect(pair.b).toMatchObject({ x: 500, y: 100 });
@@ -52,7 +52,7 @@ describe("portal tool", () => {
     const { playground, tool } = setUp();
     drag(tool, 100, 100, 104, 103);
     tap(tool, 500, 100);
-    expect(playground.portalPairs[0].a.aim).toBeNull();
+    expect(playground.portals.pairs[0].a.aim).toBeNull();
   });
 
   it("re-aims a placed portal when dragged, and un-aims it when tapped", () => {
@@ -61,10 +61,10 @@ describe("portal tool", () => {
     tap(tool, 500, 100);
     // Pressing a little off-centre still grabs it.
     drag(tool, 510, 95, 500, 200);
-    expect(playground.portalPairs[0].b.aim).toBeCloseTo(Math.PI / 2);
-    expect(playground.portalPairs).toHaveLength(1);
+    expect(playground.portals.pairs[0].b.aim).toBeCloseTo(Math.PI / 2);
+    expect(playground.portals.pairs).toHaveLength(1);
     tap(tool, 500, 100);
-    expect(playground.portalPairs[0].b.aim).toBeNull();
+    expect(playground.portals.pairs[0].b.aim).toBeNull();
   });
 
   it("takes away a waiting portal when it's tapped again", () => {
@@ -73,26 +73,22 @@ describe("portal tool", () => {
     tap(tool, 110, 100);
     tap(tool, 500, 100);
     // That was a fresh first portal, not a partner.
-    expect(playground.portalPairs).toHaveLength(0);
+    expect(playground.portals.pairs).toHaveLength(0);
     expect(tool.overlay().portalPending?.end).toMatchObject({ x: 500, y: 100 });
   });
 
   it("gives a new pair a colour no other pair is using", () => {
     const { playground, tool } = setUp();
     // As if loaded from a save, with the first two colours taken.
-    playground.addPortalPair(
-      { x: 0, y: 0 },
-      { x: 100, y: 0 },
-      PORTAL_COLORS[1],
-    );
-    playground.addPortalPair(
+    playground.portals.add({ x: 0, y: 0 }, { x: 100, y: 0 }, PORTAL_COLORS[1]);
+    playground.portals.add(
       { x: 0, y: 200 },
       { x: 100, y: 200 },
       PORTAL_COLORS[0],
     );
     tap(tool, 300, 300);
     tap(tool, 600, 300);
-    expect(playground.portalPairs[2].color).toBe(PORTAL_COLORS[2]);
+    expect(playground.portals.pairs[2].color).toBe(PORTAL_COLORS[2]);
   });
 
   it("lets Undo take away a portal waiting for its partner", () => {
@@ -104,6 +100,6 @@ describe("portal tool", () => {
     expect(tool.overlay().portalPending).toBeNull();
     // The next tap starts a new pair rather than finishing the old one.
     tap(tool, 500, 100);
-    expect(playground.portalPairs).toHaveLength(0);
+    expect(playground.portals.pairs).toHaveLength(0);
   });
 });

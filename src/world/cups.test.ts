@@ -10,7 +10,7 @@ function run(pg: Playground, seconds: number): void {
 describe("goal cups", () => {
   it("catch a ball dropped in: it's removed and counted", () => {
     const pg = new Playground();
-    const cup = pg.addCup(400, 400);
+    const cup = pg.cups.add(400, 400);
     const caught: number[] = [];
     pg.onCatch = (c) => caught.push(c.caught);
     const ball = pg.addBall(400, 200);
@@ -22,7 +22,7 @@ describe("goal cups", () => {
 
   it("keep count across several balls", () => {
     const pg = new Playground();
-    const cup = pg.addCup(400, 400);
+    const cup = pg.cups.add(400, 400);
     for (let i = 0; i < 3; i++) {
       pg.addBall(400, 100);
       run(pg, 2);
@@ -33,7 +33,7 @@ describe("goal cups", () => {
 
   it("don't catch a ball that misses", () => {
     const pg = new Playground();
-    const cup = pg.addCup(400, 400);
+    const cup = pg.cups.add(400, 400);
     const ball = pg.addBall(600, 200);
     run(pg, 1);
     expect(pg.contains(ball)).toBe(true);
@@ -42,12 +42,12 @@ describe("goal cups", () => {
 
   it("have solid walls: a ball rolling into the side is stopped", () => {
     const pg = new Playground();
-    pg.addLine([
+    pg.lines.add([
       { x: 0, y: 430 },
       { x: 1000, y: 430 },
     ]);
     // The cup sits on the floor; the ball rolls at its left wall.
-    pg.addCup(500, 405);
+    pg.cups.add(500, 405);
     const ball = pg.addBall(100, 414);
     ball.body.setLinearVelocity({ x: 6, y: 0 });
     run(pg, 2);
@@ -57,12 +57,12 @@ describe("goal cups", () => {
 
   it("are removed by the eraser and by Clear", () => {
     const pg = new Playground();
-    pg.addCup(200, 200);
-    pg.addCup(600, 200);
+    pg.cups.add(200, 200);
+    pg.cups.add(600, 200);
     pg.eraseAt(200, 200, 18);
-    expect(pg.cups.map((c) => c.x)).toEqual([600]);
+    expect(pg.cups.all.map((c) => c.x)).toEqual([600]);
     pg.clear();
-    expect(pg.cups).toHaveLength(0);
+    expect(pg.cups.all).toHaveLength(0);
     expect(pg.world.getBodyCount()).toBe(0);
   });
 });

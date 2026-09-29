@@ -40,14 +40,13 @@ export class CannonTool implements Tool {
   }
 
   down(p: Point): DownResult {
-    const { playground } = this.ctx;
-    const found = playground.cannonAt(p.x, p.y);
+    const { cannons } = this.ctx.playground;
+    const found = cannons.at(p.x, p.y);
     this.existing = found !== null;
-    this.aiming =
-      found ?? playground.addCannon(p.x, p.y, DEFAULT_ANGLE, DEFAULT_POWER);
+    this.aiming = found ?? cannons.add(p.x, p.y, DEFAULT_ANGLE, DEFAULT_POWER);
     this.dragged = false;
     // Hold fire while it's being aimed.
-    this.aiming.aiming = true;
+    cannons.hold(this.aiming);
     return "drag";
   }
 
@@ -57,30 +56,38 @@ export class CannonTool implements Tool {
     const screenDistance = distance(p, cannon) * this.ctx.camera.zoom;
     if (!this.dragged && screenDistance < AIM_DEADZONE_PX) return;
     this.dragged = true;
-    cannon.angle = Math.atan2(p.y - cannon.y, p.x - cannon.x);
-    cannon.power = Math.max(
-      0,
-      Math.min(1, (screenDistance - MIN_DRAG_PX) / (MAX_DRAG_PX - MIN_DRAG_PX)),
+    this.ctx.playground.cannons.aim(
+      cannon,
+      Math.atan2(p.y - cannon.y, p.x - cannon.x),
+      Math.max(
+        0,
+        Math.min(
+          1,
+          (screenDistance - MIN_DRAG_PX) / (MAX_DRAG_PX - MIN_DRAG_PX),
+        ),
+      ),
     );
   }
 
   up(): void {
     const cannon = this.aiming;
     if (!cannon) return;
+    const { cannons } = this.ctx.playground;
     if (this.existing && !this.dragged) {
-      cannon.active = !cannon.active;
+      cannons.setActive(cannon, !cannon.active);
     }
     if (this.dragged) {
       // Try the new aim straight away.
-      cannon.active = true;
-      cannon.nextShotAt = this.ctx.playground.now + 0.3;
+      cannons.setActive(cannon, true);
+      cannons.release(cannon, 0.3);
+    } else {
+      cannons.release(cannon);
     }
-    cannon.aiming = false;
     this.aiming = null;
   }
 
   cancel(): void {
-    if (this.aiming) this.aiming.aiming = false;
+    if (this.aiming) this.ctx.playground.cannons.release(this.aiming);
     this.aiming = null;
   }
 

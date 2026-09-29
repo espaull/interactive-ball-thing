@@ -1,20 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { emptyLayout, isEmpty, parseLayout } from "./layout";
+import { parseLayout } from "./layout";
 import { Playground } from "./playground";
 
 function designed(): Playground {
   const pg = new Playground();
-  pg.addLine([
+  pg.lines.add([
     { x: 0, y: 500 },
     { x: 400.123, y: 520.456 },
   ]);
-  pg.addBoost([
+  pg.boosts.add([
     { x: 50, y: 490 },
     { x: 150, y: 490 },
   ]);
-  pg.addPortalPair({ x: 300, y: 300 }, { x: 900, y: 300 }, "purple", null, 1);
-  pg.addCup(700, 600);
-  pg.addCannon(100, 100, -0.5, 0.75).active = false;
+  pg.portals.add({ x: 300, y: 300 }, { x: 900, y: 300 }, "purple", null, 1);
+  pg.cups.add(700, 600);
+  pg.cannons.add(100, 100, -0.5, 0.75, false);
   pg.addBall(200, 200);
   pg.addBubble(250, 250);
   return pg;
@@ -45,10 +45,12 @@ describe("layouts", () => {
     expect(ball.position.y).toBeLessThan(520);
   });
 
-  it("know when they're empty", () => {
-    expect(isEmpty(emptyLayout())).toBe(true);
-    expect(isEmpty(new Playground().layout())).toBe(true);
-    expect(isEmpty(designed().layout())).toBe(false);
+  it("know when there's a design", () => {
+    expect(new Playground().hasDesign).toBe(false);
+    const pg = designed();
+    expect(pg.hasDesign).toBe(true);
+    pg.clear();
+    expect(pg.hasDesign).toBe(false);
   });
 
   it("reject what isn't a layout, and skip what's damaged inside one", () => {

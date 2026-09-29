@@ -17,23 +17,30 @@ Live site: https://espaull.github.io/interactive-ball-thing/ — every push to
 ## Layout
 
 - `src/world/` — the simulation. `playground.ts` owns the Planck world,
-  lines, balls and stepping; each feature has its own module (`bubbles`,
-  `boosts`, `portals`, `cups`, `cannons`, `crossings`). **Planck works in
-  metres; only code in `world/` may touch Planck bodies or `PX_PER_M`.**
-  Everything else uses pixels (`ball.position`, `bubble.position`).
+  balls, bubbles and stepping. The design is made of **parts** (`part.ts`):
+  `lines`, `boosts`, `portals`, `cups`, `cannons`, each a module that keeps
+  its own things and erases, picks up, saves and loads them
+  (`playground.cups.add(…)`, `playground.cannons.aim(…)`). Their fields are
+  read-only outside the part: every change goes through it, which bumps
+  `playground.revision` and calls `onDesignChange` (Undo and the autosave
+  rely on this). `bubbles` and `crossings` add behaviour on top of Planck.
+  **Planck works in metres; only code in `world/` may touch Planck bodies
+  or `PX_PER_M`.** Everything else uses pixels (`ball.position`).
 - `src/tools/` — one class per toolbar tool, implementing `Tool` (`tool.ts`).
   `input.ts` handles the shared plumbing: pointer capture, panning (Space or
   middle-drag), wheel zoom, two-finger touch gestures, popping bubbles.
 - `src/geometry/` — pure maths: smoothing, splines, simplification, erasing,
   line joining. Easiest code to unit-test.
-- `src/render/` — drawing; `palette.ts` holds the colours.
+- `src/render/` — drawing; `design.ts` draws the design for the screen and
+  the gallery's pictures. `palette.ts` holds the colours.
 - `src/ui.ts` — toolbar, hints, background picker, saves gallery; `main.ts`
   wires it all up and runs the fixed-step game loop.
-- `src/saves.ts` — the autosave and the gallery, in `localStorage`. What's
-  saved is a `Layout` (`world/layout.ts`): the design only, no balls or
-  bubbles.
+- `src/saves.ts` — the autosave (2s after a change) and the gallery, in
+  `localStorage`. What's saved is a `Layout` (`world/layout.ts`): each
+  part's things, no balls or bubbles.
 - `src/history.ts` — Undo/redo: snapshots of the `Layout`, checkpointed
-  whenever `Input` says an action has ended (and after Clear and loading).
+  whenever `Input` says an action has ended (and after Clear and loading),
+  skipped when `playground.revision` hasn't moved.
 
 ## Adding things
 
@@ -42,14 +49,16 @@ Live site: https://espaull.github.io/interactive-ball-thing/ — every push to
   from the class. Groups with several tools open a menu. A tool with
   half-done work (like the Curve tool's points) can offer `canUndoStep` and
   `undoStep`, which Undo steps back through before the design's history.
-- **Something in the world:** its own module in `world/`, hooked into
-  `Playground.step`, `eraseAt` and `clear`. Expose callbacks (like `onCatch`)
-  for effects and sounds, which `main.ts` wires to `render/effects.ts` and
-  `sound.ts` (sounds are synthesised, no audio files). If it's part of the
-  design, add it to `Layout`, `parseLayout`, `Playground.layout`/`loadLayout`
-  and the thumbnail (`render/thumbnail.ts`). Saves already out there won't
-  have it, so parsing must cope with it missing. If it can be picked up
-  and moved with the Move tool, add it to `Playground.grabAt`.
+- **A new kind of thing in the design:** a module in `world/` with a class
+  implementing `Part` (see `cups.ts` for a small one) and a parser for its
+  saved form, which must cope with the data being missing (older saves).
+  Then add it to `Playground` (a field, `parts`, `layout`, `restoreLayout`),
+  to `Layout` and `parseLayout`, and draw it in `render/design.ts`. It's
+  erased, picked up by the Move tool, saved, undone and pictured from there.
+- **Other things in the world:** hook into `Playground.step`. Expose
+  callbacks (like `onCatch`) for effects and sounds, which `main.ts` wires
+  to `render/effects.ts` and `sound.ts` (sounds are synthesised, no audio
+  files).
 
 ## Working agreements
 

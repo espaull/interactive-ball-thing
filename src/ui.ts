@@ -7,7 +7,6 @@ import { drawThumbnail } from "./render/thumbnail";
 import type { Save, SaveStore } from "./saves";
 import type { Tool } from "./tools";
 import type { Input } from "./tools/input";
-import { isEmpty } from "./world/layout";
 import type { Playground } from "./world/playground";
 
 // Touchscreens have no Space key or Enter, so they get simpler hints.
@@ -249,8 +248,8 @@ export function setupGallery(
   }
 
   function load(save: Save): void {
-    const current = playground.layout();
-    if (!isEmpty(current) && !store.find(current) && !keep()) {
+    const unsaved = playground.hasDesign && !store.find(playground.layout());
+    if (unsaved && !keep()) {
       note = "No room to keep what's here · remove a picture first";
       show();
       return;
@@ -273,7 +272,7 @@ export function setupGallery(
     const saveButton = document.createElement("button");
     saveButton.title = "Save this playground";
     saveButton.append("💾", labelled("Save"));
-    saveButton.disabled = isEmpty(playground.layout());
+    saveButton.disabled = !playground.hasDesign;
     saveButton.addEventListener("click", save);
     tiles.append(tile(saveButton));
 

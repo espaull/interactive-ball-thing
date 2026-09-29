@@ -84,8 +84,8 @@ describe("a line crossing itself", () => {
 
   it("lets a ball go in, round the loop, and out the other side", () => {
     const pg = new Playground();
-    pg.addLine(pigtail());
-    pg.addBoost([
+    pg.lines.add(pigtail());
+    pg.boosts.add([
       { x: X0 - 480, y: floorY - 10 },
       { x: X0 - 20, y: floorY - 10 },
     ]);
@@ -113,8 +113,8 @@ describe("a line crossing itself", () => {
       ramp.push({ x, y: floorY - 450 * (1 - (x - (X0 - 400)) / 400) });
     }
     const pg = new Playground();
-    pg.addLine([...ramp, ...pigtail().slice(1)]);
-    pg.addBoost(ramp.map((p) => ({ x: p.x, y: p.y - 10 })));
+    pg.lines.add([...ramp, ...pigtail().slice(1)]);
+    pg.boosts.add(ramp.map((p) => ({ x: p.x, y: p.y - 10 })));
     const ball = pg.addBall(X0 - 380, floorY - 470);
 
     let crashedAtCrossing = false;
@@ -136,11 +136,11 @@ describe("a line crossing itself", () => {
   it("still lets separate lines block each other", () => {
     const pg = new Playground();
     // A floor, and a separate line crossing it like an X (a wall).
-    pg.addLine([
+    pg.lines.add([
       { x: 0, y: 400 },
       { x: 1000, y: 400 },
     ]);
-    pg.addLine([
+    pg.lines.add([
       { x: 450, y: 450 },
       { x: 550, y: 250 },
     ]);

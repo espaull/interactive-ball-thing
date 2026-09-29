@@ -11,7 +11,7 @@ function endingAt(end: LineEnd): Point[] {
 
 // Ends of every line, for the rings a new line can join onto.
 export function lineEnds(playground: Playground): Point[] {
-  return playground.lines.flatMap((l) => [l.points[0], l.points.at(-1)!]);
+  return playground.lines.all.flatMap((l) => [l.points[0], l.points.at(-1)!]);
 }
 
 // Finish a line. It joins onto `start` (the line end it began from, if any)
@@ -27,7 +27,7 @@ export function commitLine(
   const { playground } = ctx;
   // The start line could have been cleared away in the meantime.
   const startEnd =
-    start && playground.lines.includes(start.line) ? start : null;
+    start && playground.lines.all.includes(start.line) ? start : null;
   const finishEnd = ctx.findSnap(points.at(-1)!, startEnd?.line);
   // Snap the last point onto the end being joined.
   if (finishEnd) points = [...points.slice(0, -1), finishEnd.point];
@@ -38,7 +38,7 @@ export function commitLine(
     finishEnd && endingAt(finishEnd),
     build,
   );
-  if (startEnd) playground.replaceLine(startEnd.line, shape);
-  else playground.addLine(shape);
-  if (finishEnd) playground.removeLine(finishEnd.line);
+  if (startEnd) playground.lines.replace(startEnd.line, shape);
+  else playground.lines.add(shape);
+  if (finishEnd) playground.lines.remove(finishEnd.line);
 }

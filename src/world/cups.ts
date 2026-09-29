@@ -1,5 +1,7 @@
 import { ChainShape, type Body, type World } from "planck";
 import type { Point } from "../geometry/point";
+import { grab, type Grabbed, type Mutable, type Part } from "./part";
+import { isPoint, list, roundPoint } from "./saved";
 import { toMetres } from "./units";
 
 // The cup's outline, relative to where it was placed (pixels, y down): a U
@@ -13,7 +15,7 @@ export const CUP_OUTLINE: Point[] = [
   { x: 27, y: 12 },
   { x: 32, y: -24 },
 ];
-// How far the cup reaches from its centre, for the eraser.
+// How far the cup reaches from its centre, for the eraser and for tapping.
 export const CUP_RADIUS_PX = 36;
 
 // A goal: balls that drop into it are caught (and removed), and counted.
@@ -22,17 +24,10 @@ export class Cup {
   caught = 0;
 
   constructor(
-    public x: number,
-    public y: number,
+    readonly x: number,
+    readonly y: number,
     readonly body: Body,
   ) {}
-
-  // Pick the cup up and put it down somewhere else.
-  moveTo(x: number, y: number): void {
-    this.x = x;
-    this.y = y;
-    this.body.setPosition(toMetres({ x, y }));
-  }
 
   // Is `p` (a ball's centre) down inside the cup? The ball is caught once
   // its centre drops below the rim, between the walls.
@@ -43,15 +38,108 @@ export class Cup {
   }
 }
 
-export function createCup(world: World, x: number, y: number): Cup {
-  // The outline is relative to the body, so moving the body moves the cup.
-  const body = world.createBody({
-    type: "static",
-    position: toMetres({ x, y }),
-  });
-  body.createFixture({
-    shape: new ChainShape(CUP_OUTLINE.map(toMetres), false),
-    friction: 0.6,
-  });
-  return new Cup(x, y, body);
+// Where each cup is.
+export type SavedCups = Point[];
+
+export function parseCups(data: unknown): SavedCups {
+  return list(data).filter(isPoint).map(roundPoint);
+}
+
+// The goal cups.
+export class Cups implements Part<SavedCups> {
+  private list: Cup[] = [];
+
+  constructor(
+    private world: World,
+    private changed: () => void,
+  ) {}
+
+  get all(): readonly Cup[] {
+    return this.list;
+  }
+
+  get isEmpty(): boolean {
+    return this.list.length === 0;
+  }
+
+  add(x: number, y: number): Cup {
+    // The outline is relative to the body, so moving the body moves the cup.
+    const body = this.world.createBody({
+      type: "static",
+      position: toMetres({ x, y }),
+    });
+    body.createFixture({
+      shape: new ChainShape(CUP_OUTLINE.map(toMetres), false),
+      friction: 0.6,
+    });
+    const cup = new Cup(x, y, body);
+    this.list.push(cup);
+    this.changed();
+    return cup;
+  }
+
+  // The cup at a point, if any. The most recently placed one wins, as it's
+  // drawn on top.
+  at(x: number, y: number): Cup | null {
+    for (let i = this.list.length - 1; i >= 0; i--) {
+      const c = this.list[i];
+      if (Math.hypot(c.x - x, c.y - y) < CUP_RADIUS_PX) return c;
+    }
+    return null;
+  }
+
+  // The cup that has caught a ball at `p`, if any.
+  catching(p: Point): Cup | undefined {
+    return this.list.find((cup) => cup.catches(p));
+  }
+
+  grabAt(x: number, y: number): Grabbed | null {
+    const cup = this.at(x, y) as Mutable<Cup> | null;
+    if (!cup) return null;
+    return grab(cup, (x, y) => {
+      cup.x = x;
+      cup.y = y;
+      cup.body.setPosition(toMetres({ x, y }));
+      this.changed();
+    });
+  }
+
+  eraseAt(x: number, y: number, radius: number): void {
+    for (const cup of [...this.list]) {
+      if (Math.hypot(cup.x - x, cup.y - y) < radius + CUP_RADIUS_PX) {
+        this.world.destroyBody(cup.body);
+        this.list.splice(this.list.indexOf(cup), 1);
+        this.changed();
+      }
+    }
+  }
+
+  extent(add: (p: Point, reach: number) => void): void {
+    for (const cup of this.list) add(cup, CUP_RADIUS_PX);
+  }
+
+  save(): SavedCups {
+    return this.list.map(roundPoint);
+  }
+
+  // Cups keep their count through a load (for Undo): matched in order if
+  // there are as many as before (so one that was moved keeps it), or else
+  // by where they are.
+  load(saved: SavedCups): void {
+    const before = this.list.map((cup) => cup.caught);
+    const key = (p: Point) => JSON.stringify(roundPoint(p));
+    const caught = new Map(this.list.map((cup) => [key(cup), cup.caught]));
+    this.clear();
+    for (const { x, y } of saved) this.add(x, y);
+    const sameCups = this.list.length === before.length;
+    this.list.forEach((cup, i) => {
+      cup.caught = sameCups ? before[i] : (caught.get(key(cup)) ?? 0);
+    });
+  }
+
+  clear(): void {
+    for (const cup of this.list) this.world.destroyBody(cup.body);
+    this.list = [];
+    this.changed();
+  }
 }

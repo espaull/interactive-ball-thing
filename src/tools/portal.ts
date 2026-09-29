@@ -30,8 +30,9 @@ export class PortalTool implements Tool {
   };
   popsBubbles = true;
 
-  // The first end of a pair, waiting for its partner.
-  private first: PortalEnd | null = null;
+  // The first end of a pair, waiting for its partner. It's not in the
+  // playground yet, so it's the tool's own to change.
+  private first: { x: number; y: number; aim: number | null } | null = null;
   // The portal being aimed, while the pointer is down.
   private aiming: PortalEnd | null = null;
   private target: Target = "new";
@@ -48,7 +49,7 @@ export class PortalTool implements Tool {
   // (even ones loaded from a save). Once they're all taken, they go round
   // again.
   private get color(): string {
-    const pairs = this.ctx.playground.portalPairs;
+    const pairs = this.ctx.playground.portals.pairs;
     const used = new Set(pairs.map((pair) => pair.color));
     return (
       PORTAL_COLORS.find((color) => !used.has(color)) ??
@@ -58,7 +59,7 @@ export class PortalTool implements Tool {
 
   down(p: Point): DownResult {
     const { playground } = this.ctx;
-    const placed = playground.portalAt(p.x, p.y);
+    const placed = playground.portals.at(p.x, p.y);
     if (this.first && distance(p, this.first) < PORTAL_RADIUS_PX * 2) {
       this.aim(this.first, "pending", p);
     } else if (placed) {
@@ -68,7 +69,7 @@ export class PortalTool implements Tool {
       this.aim(this.first, "new", p);
     } else {
       const { first } = this;
-      const pair = playground.addPortalPair(first, p, this.color, first.aim);
+      const pair = playground.portals.add(first, p, this.color, first.aim);
       this.first = null;
       this.aim(pair.b, "new", p);
     }
@@ -89,15 +90,22 @@ export class PortalTool implements Tool {
     if (!this.dragged && screenDistance < AIM_DEADZONE_PX) return;
     this.dragged = true;
     // Pressed off-centre, the pointer can pass right over the middle.
-    if (distance(p, end) > 1) end.aim = Math.atan2(p.y - end.y, p.x - end.x);
+    if (distance(p, end) > 1) {
+      this.setAim(end, Math.atan2(p.y - end.y, p.x - end.x));
+    }
   }
 
   up(): void {
     if (this.aiming && !this.dragged) {
       if (this.target === "pending") this.first = null;
-      if (this.target === "placed") this.aiming.aim = null;
+      if (this.target === "placed") this.setAim(this.aiming, null);
     }
     this.aiming = null;
+  }
+
+  private setAim(end: PortalEnd, aim: number | null): void {
+    if (end === this.first) this.first.aim = aim;
+    else this.ctx.playground.portals.aim(end, aim);
   }
 
   key(key: string): void {

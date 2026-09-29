@@ -28,7 +28,7 @@ export function createToolGroups(
     playground,
     camera,
     findSnap: (p, except) =>
-      playground.lineEndAt(p.x, p.y, SNAP_RADIUS_PX / camera.zoom, except),
+      playground.lines.endAt(p.x, p.y, SNAP_RADIUS_PX / camera.zoom, except),
   };
   return [
     [new PencilTool(ctx), new CurveTool(ctx)],

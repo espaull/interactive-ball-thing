@@ -1,9 +1,4 @@
-import type { Box, Point } from "../geometry/point";
-import { BOOST_HALF_WIDTH_PX } from "../world/boosts";
-import { CANNON_RADIUS_PX } from "../world/cannons";
-import { CUP_RADIUS_PX } from "../world/cups";
 import type { Playground } from "../world/playground";
-import { PORTAL_RADIUS_PX } from "../world/portals";
 import { drawDesign, LINE_WIDTH_PX } from "./design";
 
 // Size of a gallery picture, in CSS pixels. It's drawn at twice this, so it
@@ -26,7 +21,7 @@ export function drawThumbnail(playground: Playground, base: string): string {
   ctx.fillStyle = base;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  const box = bounds(playground);
+  const box = playground.designBounds();
   if (!box) return canvas.toDataURL("image/jpeg", 0.85);
   const width = THUMBNAIL_WIDTH - PADDING * 2;
   const height = THUMBNAIL_HEIGHT - PADDING * 2;
@@ -49,30 +44,4 @@ export function drawThumbnail(playground: Playground, base: string): string {
   );
 
   return canvas.toDataURL("image/jpeg", 0.85);
-}
-
-// The area everything in the design covers, or null if there's nothing.
-function bounds(playground: Playground): Box | null {
-  let box: Box | null = null;
-  const add = ({ x, y }: Point, r: number) => {
-    box ??= { left: x, top: y, right: x, bottom: y };
-    box.left = Math.min(box.left, x - r);
-    box.top = Math.min(box.top, y - r);
-    box.right = Math.max(box.right, x + r);
-    box.bottom = Math.max(box.bottom, y + r);
-  };
-  for (const line of playground.lines) {
-    for (const p of line.points) add(p, 4);
-  }
-  for (const boost of playground.boosts) {
-    for (const p of boost.points) add(p, BOOST_HALF_WIDTH_PX);
-  }
-  for (const { a, b } of playground.portalPairs) {
-    // Room for an aim arrow on any side.
-    add(a, PORTAL_RADIUS_PX + 26);
-    add(b, PORTAL_RADIUS_PX + 26);
-  }
-  for (const cup of playground.cups) add(cup, CUP_RADIUS_PX);
-  for (const cannon of playground.cannons) add(cannon, CANNON_RADIUS_PX + 20);
-  return box;
 }

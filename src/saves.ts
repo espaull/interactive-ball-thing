@@ -83,26 +83,33 @@ export class SaveStore {
   }
 }
 
-// How often to check for changes to autosave, in milliseconds.
-const AUTOSAVE_INTERVAL_MS = 30000;
+// How long after a change to autosave, in milliseconds. Changes in the
+// meantime are saved along with it, so while playing it writes at most this
+// often, and not at all while nothing changes.
+const AUTOSAVE_DELAY_MS = 2000;
 
-// Bring back the playground from last time, then keep saving it whenever it
-// changes (checked every thirty seconds, and when the page is hidden or closed).
+// Bring back the playground from last time, then save it shortly after
+// each change (and straight away when the page is hidden or closed).
 export function startAutosave(store: SaveStore, playground: Playground): void {
   const saved = store.loadAutosave();
   if (saved) playground.loadLayout(saved);
 
-  let last = JSON.stringify(playground.layout());
-  const check = () => {
-    const layout = playground.layout();
-    const json = JSON.stringify(layout);
-    if (json !== last && store.autosave(layout)) last = json;
+  let pending: number | undefined;
+  const save = () => {
+    window.clearTimeout(pending);
+    pending = undefined;
+    store.autosave(playground.layout());
   };
-  window.setInterval(check, AUTOSAVE_INTERVAL_MS);
+  playground.onDesignChange = () => {
+    pending ??= window.setTimeout(save, AUTOSAVE_DELAY_MS);
+  };
+  const saveNow = () => {
+    if (pending !== undefined) save();
+  };
   document.addEventListener("visibilitychange", () => {
-    if (document.hidden) check();
+    if (document.hidden) saveNow();
   });
-  window.addEventListener("pagehide", check);
+  window.addEventListener("pagehide", saveNow);
 }
 
 // The browser's storage, or null where it's unavailable.
