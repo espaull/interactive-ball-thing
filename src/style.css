@@ -100,58 +100,54 @@ body {
   border-radius: 1px;
 }
 
-/* Narrower windows: the same buttons, smaller. (The full-size toolbar is
-   about 760px wide, plus the 16px gaps at the sides.) */
-@media (max-width: 800px) {
-  #toolbar {
-    gap: 3px;
-    padding: 5px;
-  }
-  #toolbar button,
-  #tool-menu button {
-    min-width: 0;
-    padding: 5px 4px;
-    font-size: 20px;
-    border-width: 2px;
-  }
-  #toolbar button span,
-  #tool-menu button span {
-    font-size: 10px;
-  }
+/* When the toolbar doesn't fit (with a 16px gap either side), ui/toolbar.ts
+   steps it down through these, one at a time, until it does. Each one adds
+   to the one before. */
+
+/* The same buttons, smaller. */
+.toolbar-compact #toolbar {
+  gap: 3px;
+  padding: 5px;
+}
+.toolbar-compact #toolbar button,
+.toolbar-compact #tool-menu button {
+  min-width: 0;
+  padding: 5px 4px;
+  font-size: 20px;
+  border-width: 2px;
+}
+.toolbar-compact #toolbar button span,
+.toolbar-compact #tool-menu button span {
+  font-size: 10px;
 }
 
-/* Phones: tighter spacing keeps the toolbar on one row. */
-@media (max-width: 420px) {
-  #toolbar {
-    gap: 2px;
-    padding: 4px;
-  }
-  #toolbar button {
-    padding: 5px 2px;
-  }
-  #toolbar .divider {
-    margin: 6px 1px;
-  }
+/* Tighter spacing, to keep it on one row. */
+.toolbar-tight #toolbar {
+  gap: 2px;
+  padding: 4px;
+}
+.toolbar-tight #toolbar button {
+  padding: 5px 2px;
+}
+.toolbar-tight #toolbar .divider {
+  margin: 6px 1px;
 }
 
-/* The smallest phones: two rows. The divider becomes a line break, so the
-   tools sit on top and Follow/Home/Undo/Clear go underneath. (One row is
-   about 340px wide, plus the 16px gaps at the sides.) */
-@media (max-width: 372px) {
-  #toolbar {
-    flex-wrap: wrap;
-    justify-content: center;
-    width: max-content;
-    /* Count the padding in the max width, so the toolbar keeps a 16px gap
-       from the screen edges. */
-    box-sizing: border-box;
-    max-width: calc(100vw - 32px);
-  }
-  #toolbar .divider {
-    flex-basis: 100%;
-    height: 0;
-    margin: 0;
-  }
+/* Two rows. The divider becomes a line break, so the tools sit on top and
+   Follow/Home/Undo/Clear go underneath. */
+.toolbar-rows #toolbar {
+  flex-wrap: wrap;
+  justify-content: center;
+  width: max-content;
+  /* Count the padding in the max width, so the toolbar keeps a 16px gap
+     from the screen edges. */
+  box-sizing: border-box;
+  max-width: calc(100vw - 32px);
+}
+.toolbar-rows #toolbar .divider {
+  flex-basis: 100%;
+  height: 0;
+  margin: 0;
 }
 
 #hint {
