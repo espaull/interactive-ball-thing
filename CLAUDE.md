@@ -5,7 +5,8 @@ add boosts, portals, cups and cannons. Runs in the browser (Mac, PC, phones
 and tablets). Vite + TypeScript + Planck.js (a Box2D port) + Canvas 2D.
 
 Live site: https://espaull.github.io/interactive-ball-thing/ — every push to
-`main` tests, builds and deploys it (`.github/workflows/deploy.yml`).
+`main` checks formatting, tests, builds and deploys it
+(`.github/workflows/deploy.yml`).
 
 ## Commands
 
@@ -25,23 +26,30 @@ Live site: https://espaull.github.io/interactive-ball-thing/ — every push to
   (`playground.cups.add(…)`, `playground.cannons.aim(…)`). Their fields are
   read-only outside the part: every change goes through it, which bumps
   `playground.revision` and emits `designChanged` (Undo and the autosave
-  rely on this). `bubbles` and `crossings` add behaviour on top of Planck.
+  rely on this). What isn't saved (a cannon being held or its next shot, a
+  cup's count) isn't the design, so changing it doesn't count. `saved.ts`
+  has the helpers each part's parser uses. `bubbles` and `crossings` add
+  behaviour on top of Planck.
   **Planck works in metres; only code in `world/` may touch Planck bodies
   or `PX_PER_M`.** Everything else uses pixels (`ball.position`).
 - `src/tools/` — one class per toolbar tool, implementing `Tool` (`tool.ts`).
   `input.ts` handles the shared plumbing: pointer capture, panning (Space or
-  middle-drag), wheel zoom, two-finger touch gestures, popping bubbles.
+  middle-drag), wheel zoom, two-finger touch gestures, popping bubbles,
+  keyboard shortcuts, and saying when an action has ended.
 - `src/geometry/` — pure maths: smoothing, splines, simplification, erasing,
   line joining. Easiest code to unit-test.
 - `src/render/` — drawing; `design.ts` draws the design for the screen and
-  the gallery's pictures. `palette.ts` holds the colours.
+  the gallery's pictures (which are fitted using each part's `extent`).
+  `src/palette.ts` holds the colours.
 - `src/ui/` — the HTML controls: `toolbar` (tool buttons, menus, hint),
   `actions` (Follow, Home, Undo, Clear), `background`, `gallery`. Each
-  `setup…` takes the `App` (`app.ts`), which `main.ts` builds before running
-  the fixed-step game loop. Keyboard shortcuts go through
+  `setup…` takes the `App` (`src/app.ts`), which `main.ts` builds before
+  running the fixed-step game loop. Keyboard shortcuts go through
   `input.addShortcut`, so the tools never see them.
-- `signal.ts` — `Signal`, for things several parts of the app listen to
+- `src/signal.ts` — `Signal`, for things several parts of the app listen to
   (`input.actionEnded`, `playground.designChanged`, `history.changed`).
+  Effects and sounds use plain callbacks (`playground.onCatch`), as only
+  `main.ts` listens to them.
 - `src/saves.ts` — the autosave (2s after a change) and the gallery, in
   `localStorage`. What's saved is a `Layout` (`world/layout.ts`): each
   part's things, no balls or bubbles.
@@ -59,9 +67,13 @@ Live site: https://espaull.github.io/interactive-ball-thing/ — every push to
 - **A new kind of thing in the design:** a module in `world/` with a class
   implementing `Part` (see `cups.ts` for a small one) and a parser for its
   saved form, which must cope with the data being missing (older saves).
-  Then add it to `Playground` (a field, `parts`, `layout`, `restoreLayout`),
-  to `Layout` and `parseLayout`, and draw it in `render/design.ts`. It's
-  erased, picked up by the Move tool, saved, undone and pictured from there.
+  Every change to it goes through the part and calls `changed`. Then add
+  it to `Playground` (a field, `parts`, `layout`, `restoreLayout`), to
+  `Layout`, `emptyLayout` and `parseLayout`, and draw it in
+  `render/design.ts`. `parts` is in drawing order from the top, so what's
+  picked up is what's on top. It's then erased, picked up by the Move tool,
+  saved, undone and pictured without more work, but the Eraser's and Move
+  tool's hints list what they work on.
 - **Other things in the world:** hook into `Playground.step`. Expose
   callbacks (like `onCatch`) for effects and sounds, which `main.ts` wires
   to `render/effects.ts` and `sound.ts` (sounds are synthesised, no audio
@@ -87,6 +99,10 @@ Live site: https://espaull.github.io/interactive-ball-thing/ — every push to
   because a line is many segments and contacts flicker between them.
 - Planck reuses contact objects, so any set of contacts must be cleaned up
   in `end-contact`.
+- **The toolbar sizes itself:** `ui/toolbar.ts` measures it and adds the
+  `toolbar-compact`, `-tight` and `-rows` classes (in `style.css`) until it
+  fits with 16px either side. Don't add screen-width breakpoints for it; a
+  new button just works.
 - Phones: the canvas is sized from its own box (not `100vh`), so touches
   land where they're drawn; a single touch waits 100ms before reaching the
   tool, in case it's the start of a pinch.
