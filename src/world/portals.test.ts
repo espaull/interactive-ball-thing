@@ -69,6 +69,73 @@ describe("portals", () => {
     expect(Math.hypot(v.x, v.y)).toBeLessThan(25 + 13);
   });
 
+  it("send a ball out the way its exit is aimed, at the same speed", () => {
+    const pg = new Playground();
+    pg.world.setGravity({ x: 0, y: 0 });
+    // Things come out of the far portal heading straight up.
+    pg.addPortalPair(
+      { x: 300, y: 300 },
+      { x: 900, y: 600 },
+      "purple",
+      null,
+      -Math.PI / 2,
+    );
+    const ball = pg.addBall(200, 300);
+    ball.body.setLinearVelocity({ x: 6, y: 0 });
+    run(pg, 1);
+    const v = ball.body.getLinearVelocity();
+    expect(v.x).toBeCloseTo(0);
+    expect(v.y).toBeCloseTo(-6);
+    expect(ball.position.y).toBeLessThan(600);
+  });
+
+  it("keep a ball rolling at speed when an aimed exit turns it round", () => {
+    const pg = new Playground();
+    const radius = 16; // the ball's, in pixels
+    pg.addLine([
+      { x: 0, y: 500 },
+      { x: 2000, y: 500 },
+    ]);
+    // Rolling right into one portal, and sent back out of the other going left.
+    pg.addPortalPair(
+      { x: 1000, y: 500 - radius },
+      { x: 300, y: 500 - radius },
+      "purple",
+      null,
+      Math.PI,
+    );
+    const ball = pg.addBall(600, 500 - radius);
+    ball.body.setLinearVelocity({ x: 6, y: 0 });
+    ball.body.setAngularVelocity(6 / 0.4); // already rolling
+    let through = false;
+    pg.onTeleport = () => (through = true);
+    run(pg, 3, () => {
+      if (!through) return;
+      // Half a second after coming out, it should still be going nearly as
+      // fast. Spinning the wrong way, friction would slow it to a third.
+      run(pg, 0.5);
+      expect(ball.body.getLinearVelocity().x).toBeLessThan(-6 * 0.9);
+      expect(ball.body.getAngularVelocity()).toBeLessThan(0);
+      through = false;
+      pg.onTeleport = () => {};
+    });
+    expect(ball.position.x).toBeLessThan(300);
+  });
+
+  it("can be found, and un-aimed to let things carry straight on", () => {
+    const pg = new Playground();
+    pg.world.setGravity({ x: 0, y: 0 });
+    pg.addPortalPair({ x: 300, y: 300 }, { x: 900, y: 300 }, "purple", 0, 2);
+    expect(pg.portalAt(310, 290)?.aim).toBe(0);
+    expect(pg.portalAt(600, 300)).toBeNull();
+    pg.portalAt(900, 300)!.aim = null;
+    const ball = pg.addBall(200, 300);
+    ball.body.setLinearVelocity({ x: 6, y: 0 });
+    run(pg, 1);
+    expect(ball.body.getLinearVelocity().x).toBeCloseTo(6);
+    expect(ball.body.getLinearVelocity().y).toBeCloseTo(0);
+  });
+
   it("take bubbles too", () => {
     const pg = new Playground();
     pg.addPortalPair({ x: 300, y: 300 }, { x: 900, y: 300 }, "purple");

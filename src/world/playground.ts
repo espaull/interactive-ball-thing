@@ -12,14 +12,19 @@ import {
   type Cannon,
 } from "./cannons";
 import { CUP_RADIUS_PX, Cup, createCup } from "./cups";
-import { Portals, type PortalPair, type Teleport } from "./portals";
+import {
+  Portals,
+  type PortalEnd,
+  type PortalPair,
+  type Teleport,
+} from "./portals";
 import { Bubble, BubbleBehaviour, createBubble } from "./bubbles";
 import { PX_PER_M, toMetres, toPixels } from "./units";
 
 export { BoostZone } from "./boosts";
 export type { Cannon } from "./cannons";
 export { Cup } from "./cups";
-export type { PortalPair, Teleport } from "./portals";
+export type { PortalEnd, PortalPair, Teleport } from "./portals";
 export { Bubble } from "./bubbles";
 
 const BALL_RADIUS_M = 0.4;
@@ -274,9 +279,27 @@ export class Playground {
 
   // --- Portals ---
 
-  // A linked pair of portals at `a` and `b`.
-  addPortalPair(a: Point, b: Point, color: string): void {
-    this.portals.add({ a, b, color });
+  // A linked pair of portals at `a` and `b`. Each end's `aim` is which way
+  // things come out of it (radians), or null to carry straight on.
+  addPortalPair(
+    a: Point,
+    b: Point,
+    color: string,
+    aimA: number | null = null,
+    aimB: number | null = null,
+  ): PortalPair {
+    const pair = {
+      a: { x: a.x, y: a.y, aim: aimA },
+      b: { x: b.x, y: b.y, aim: aimB },
+      color,
+    };
+    this.portals.add(pair);
+    return pair;
+  }
+
+  // The portal end at a point (with a little slack for fingers), if any.
+  portalAt(x: number, y: number): PortalEnd | null {
+    return this.portals.endAt(x, y, 6);
   }
 
   // --- Cannons ---

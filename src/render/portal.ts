@@ -1,11 +1,11 @@
-import type { Point } from "../geometry/point";
-import { PORTAL_RADIUS_PX } from "../world/portals";
+import { PORTAL_RADIUS_PX, type PortalEnd } from "../world/portals";
 
 // A portal: a dark hole with a coloured rim and white arcs swirling round
-// inside it. `opacity` is lower for a portal still waiting for its partner.
+// inside it, plus an arrow on the rim if it's aimed. `opacity` is lower for a
+// portal still waiting for its partner.
 export function drawPortal(
   ctx: CanvasRenderingContext2D,
-  { x, y }: Point,
+  { x, y, aim }: PortalEnd,
   color: string,
   time: number,
   opacity = 1,
@@ -37,6 +37,25 @@ export function drawPortal(
   ctx.beginPath();
   ctx.arc(x, y, r, 0, Math.PI * 2);
   ctx.stroke();
+
+  // The arrow points the way things come out.
+  if (aim !== null) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(aim);
+    ctx.fillStyle = color;
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 3;
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    ctx.moveTo(r + 26, 0);
+    ctx.lineTo(r + 4, -14);
+    ctx.lineTo(r + 4, 14);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
 
   ctx.globalAlpha = 1;
 }

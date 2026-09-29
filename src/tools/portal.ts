@@ -1,10 +1,22 @@
 import { distance, type Point } from "../geometry/point";
 import { PORTAL_COLORS } from "../palette";
+import type { PortalEnd } from "../world/playground";
 import { PORTAL_RADIUS_PX } from "../world/portals";
 import type { DownResult, Overlay, Tool, ToolContext } from "./tool";
 
+// Screen pixels of drag that count as aiming rather than a tap.
+const AIM_DEADZONE_PX = 12;
+
+// What a press started on, which decides what a tap (no drag) does.
+// "new": placed a portal, which stays unaimed. "pending": tapped the portal
+// waiting for its partner, which takes it away. "placed": tapped a portal
+// already in a pair, which un-aims it.
+type Target = "new" | "pending" | "placed";
+
 // Place portals in pairs: the first tap puts down one end, the second its
-// partner. Each pair gets its own colour.
+// partner. Each pair gets its own colour. Dragging while placing one aims it:
+// things come out of it that way. Dragging from a portal already down
+// re-aims it; tapping one lets things carry straight on through again.
 export class PortalTool implements Tool {
   label = "Portal";
   icon = "🌀";
@@ -12,35 +24,74 @@ export class PortalTool implements Tool {
   cursor = "crosshair";
   hints = {
     mouse:
-      "Click to place a portal, then click again for its partner · balls go in one and come out the other · Esc cancels",
+      "Click to place a portal, then click again for its partner · drag as you place one to aim where balls come out · drag a portal to re-aim it, click it to un-aim it · Esc cancels",
     touch:
-      "Tap to place a portal, then tap again for its partner · balls go in one and come out the other",
+      "Tap to place a portal, then tap again for its partner · drag as you place one to aim where balls come out · drag a portal to re-aim it, tap it to un-aim it",
   };
   popsBubbles = true;
-  busy = false;
 
   // The first end of a pair, waiting for its partner.
-  private first: Point | null = null;
+  private first: PortalEnd | null = null;
   private pairsMade = 0;
+  // The portal being aimed, while the pointer is down.
+  private aiming: PortalEnd | null = null;
+  private target: Target = "new";
+  private pressedAt: Point = { x: 0, y: 0 };
+  private dragged = false;
 
   constructor(private ctx: ToolContext) {}
+
+  get busy(): boolean {
+    return this.aiming !== null;
+  }
 
   private get color(): string {
     return PORTAL_COLORS[this.pairsMade % PORTAL_COLORS.length];
   }
 
   down(p: Point): DownResult {
-    if (!this.first) {
-      this.first = p;
-    } else if (distance(p, this.first) < PORTAL_RADIUS_PX * 2) {
-      // Tapping the waiting portal again takes it away.
-      this.first = null;
+    const { playground } = this.ctx;
+    const placed = playground.portalAt(p.x, p.y);
+    if (this.first && distance(p, this.first) < PORTAL_RADIUS_PX * 2) {
+      this.aim(this.first, "pending", p);
+    } else if (placed) {
+      this.aim(placed, "placed", p);
+    } else if (!this.first) {
+      this.first = { x: p.x, y: p.y, aim: null };
+      this.aim(this.first, "new", p);
     } else {
-      this.ctx.playground.addPortalPair(this.first, p, this.color);
+      const { first } = this;
+      const pair = playground.addPortalPair(first, p, this.color, first.aim);
       this.pairsMade++;
       this.first = null;
+      this.aim(pair.b, "new", p);
     }
-    return "none";
+    return "drag";
+  }
+
+  private aim(end: PortalEnd, target: Target, p: Point): void {
+    this.aiming = end;
+    this.target = target;
+    this.pressedAt = p;
+    this.dragged = false;
+  }
+
+  move(p: Point): void {
+    const end = this.aiming;
+    if (!end) return;
+    const screenDistance = distance(p, this.pressedAt) * this.ctx.camera.zoom;
+    if (!this.dragged && screenDistance < AIM_DEADZONE_PX) return;
+    this.dragged = true;
+    // Pressed off-centre, the pointer can pass right over the middle.
+    if (distance(p, end) > 1) end.aim = Math.atan2(p.y - end.y, p.x - end.x);
+  }
+
+  up(): void {
+    if (this.aiming && !this.dragged) {
+      if (this.target === "pending") this.first = null;
+      if (this.target === "placed") this.aiming.aim = null;
+    }
+    this.aiming = null;
   }
 
   key(key: string): void {
@@ -55,11 +106,12 @@ export class PortalTool implements Tool {
 
   cancel(): void {
     this.first = null;
+    this.aiming = null;
   }
 
   overlay(): Partial<Overlay> {
     return {
-      portalPending: this.first && { point: this.first, color: this.color },
+      portalPending: this.first && { end: this.first, color: this.color },
     };
   }
 }

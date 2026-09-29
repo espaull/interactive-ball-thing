@@ -10,10 +10,21 @@ const ENTRY_FRACTION = 0.8;
 // partner makes an endless fall that speeds up every time round.
 const MAX_EXIT_SPEED = 25;
 
+// Below this horizontal speed (m/s), something coming out of an aimed portal
+// isn't clearly heading either way, so its spin is left alone.
+const MIN_SPIN_FLIP_SPEED = 0.1;
+
+// One end of a pair. `aim` is which way things come out of it, in radians
+// (0 is right, and y grows downwards), or null to carry on the way they went
+// into its partner.
+export interface PortalEnd extends Point {
+  aim: number | null;
+}
+
 // Two linked portals: whatever goes into one comes out of the other.
 export interface PortalPair {
-  a: Point;
-  b: Point;
+  a: PortalEnd;
+  b: PortalEnd;
   color: string;
 }
 
@@ -51,8 +62,20 @@ export class Portals {
     this.pairs.length = 0;
   }
 
+  // The portal end within `slack` pixels of a point's rim, if any. The most
+  // recently placed wins, as it's drawn on top.
+  endAt(x: number, y: number, slack: number): PortalEnd | null {
+    for (let i = this.pairs.length - 1; i >= 0; i--) {
+      for (const end of [this.pairs[i].b, this.pairs[i].a]) {
+        if (distance(end, { x, y }) < PORTAL_RADIUS_PX + slack) return end;
+      }
+    }
+    return null;
+  }
+
   // Move anything that has gone into a portal out of its partner, keeping
-  // its speed and direction. Call between physics steps.
+  // its speed. It keeps its direction too, unless the partner is aimed.
+  // Call between physics steps.
   teleport(bodies: Body[]): Teleport[] {
     const teleports: Teleport[] = [];
     for (const body of bodies) {
@@ -69,11 +92,18 @@ export class Portals {
         if (!exit) continue;
         body.setPosition(toMetres(exit));
         const v = body.getLinearVelocity();
-        const speed = Math.hypot(v.x, v.y);
-        if (speed > MAX_EXIT_SPEED) {
+        const speedIn = Math.hypot(v.x, v.y);
+        const speed = Math.min(speedIn, MAX_EXIT_SPEED);
+        if (exit.aim !== null) {
           body.setLinearVelocity({
-            x: (v.x / speed) * MAX_EXIT_SPEED,
-            y: (v.y / speed) * MAX_EXIT_SPEED,
+            x: Math.cos(exit.aim) * speed,
+            y: Math.sin(exit.aim) * speed,
+          });
+          matchSpin(body);
+        } else if (speed < speedIn) {
+          body.setLinearVelocity({
+            x: (v.x / speedIn) * speed,
+            y: (v.y / speedIn) * speed,
           });
         }
         body.setAwake(true);
@@ -86,10 +116,23 @@ export class Portals {
   }
 
   // Where something at `position` comes out, if it's in one of the pair.
-  private exitFor(pair: PortalPair, position: Point): Point | null {
+  private exitFor(pair: PortalPair, position: Point): PortalEnd | null {
     const entry = PORTAL_RADIUS_PX * ENTRY_FRACTION;
     if (distance(position, pair.a) < entry) return pair.b;
     if (distance(position, pair.b) < entry) return pair.a;
     return null;
   }
+}
+
+// Turn a body's spin the way it would roll along a floor in the direction
+// it's now heading, keeping how fast it spins. Something that rolled in going
+// right and was sent out going left would otherwise land spinning backwards,
+// and friction would scrub off most of its speed. A floor is the best guess
+// at what it'll land on, as gravity pulls it down. (y grows downwards, so a
+// positive angular velocity is clockwise on screen, the way a ball rolling
+// right turns.)
+function matchSpin(body: Body): void {
+  const vx = body.getLinearVelocity().x;
+  if (Math.abs(vx) < MIN_SPIN_FLIP_SPEED) return;
+  body.setAngularVelocity(Math.sign(vx) * Math.abs(body.getAngularVelocity()));
 }

@@ -1,5 +1,5 @@
 import type { Camera } from "../camera";
-import type { Line, LineEnd, Playground } from "../world/playground";
+import type { Line, LineEnd, Playground, PortalEnd } from "../world/playground";
 import type { Point } from "../geometry/point";
 
 // Everything drawn on top of the world to show what the tools are doing.
@@ -17,7 +17,7 @@ export interface Overlay {
   // The boost strip being painted.
   boostPreview: Point[] | null;
   // The first portal of a pair, waiting for its partner.
-  portalPending: { point: Point; color: string } | null;
+  portalPending: { end: PortalEnd; color: string } | null;
   // Where a cannon being aimed will send its balls.
   trajectory: Point[] | null;
 }

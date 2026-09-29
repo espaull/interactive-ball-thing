@@ -134,7 +134,7 @@ export function render(
     drawPortal(ctx, pair.b, pair.color, time);
   }
   if (portalPending) {
-    drawPortal(ctx, portalPending.point, portalPending.color, time, 0.5);
+    drawPortal(ctx, portalPending.end, portalPending.color, time, 0.5);
   }
 
   // Cannons, and the path a cannon being aimed will send its balls.
