@@ -84,10 +84,10 @@ export class SaveStore {
 }
 
 // How often to check for changes to autosave, in milliseconds.
-const AUTOSAVE_INTERVAL_MS = 1000;
+const AUTOSAVE_INTERVAL_MS = 30000;
 
 // Bring back the playground from last time, then keep saving it whenever it
-// changes (checked every second, and when the page is hidden or closed).
+// changes (checked every thirty seconds, and when the page is hidden or closed).
 export function startAutosave(store: SaveStore, playground: Playground): void {
   const saved = store.loadAutosave();
   if (saved) playground.loadLayout(saved);
