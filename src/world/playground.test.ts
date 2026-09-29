@@ -90,7 +90,7 @@ describe("the design's revision", () => {
   it("goes up with every change to the design, and not otherwise", () => {
     const pg = new Playground();
     let changes = 0;
-    pg.onDesignChange = () => changes++;
+    pg.designChanged.listen(() => changes++);
     const changed = (change: () => void) => {
       const before = pg.revision;
       change();

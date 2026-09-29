@@ -100,9 +100,9 @@ export function startAutosave(store: SaveStore, playground: Playground): void {
     pending = undefined;
     store.autosave(playground.layout());
   };
-  playground.onDesignChange = () => {
+  playground.designChanged.listen(() => {
     pending ??= window.setTimeout(save, AUTOSAVE_DELAY_MS);
-  };
+  });
   const saveNow = () => {
     if (pending !== undefined) save();
   };

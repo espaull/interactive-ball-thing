@@ -10,6 +10,7 @@ import type { Layout } from "./layout";
 import { Lines } from "./lines";
 import type { Grabbed, Part } from "./part";
 import { Portals, type Teleport } from "./portals";
+import { Signal } from "../signal";
 import { PX_PER_M, toMetres, toPixels } from "./units";
 
 export { BoostZone } from "./boosts";
@@ -73,11 +74,11 @@ export class Playground {
   // Goes up by one whenever the design changes, so Undo can tell cheaply
   // whether anything did.
   revision = 0;
-  // Called whenever the design changes (for the autosave).
-  onDesignChange: () => void = () => {};
+  // Whenever the design changes (for the autosave).
+  readonly designChanged = new Signal();
   private changed = () => {
     this.revision++;
-    this.onDesignChange();
+    this.designChanged.emit();
   };
 
   // The design's parts. To add a kind of thing, write a Part for it, add it

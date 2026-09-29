@@ -22,7 +22,7 @@ Live site: https://espaull.github.io/interactive-ball-thing/ — every push to
   its own things and erases, picks up, saves and loads them
   (`playground.cups.add(…)`, `playground.cannons.aim(…)`). Their fields are
   read-only outside the part: every change goes through it, which bumps
-  `playground.revision` and calls `onDesignChange` (Undo and the autosave
+  `playground.revision` and emits `designChanged` (Undo and the autosave
   rely on this). `bubbles` and `crossings` add behaviour on top of Planck.
   **Planck works in metres; only code in `world/` may touch Planck bodies
   or `PX_PER_M`.** Everything else uses pixels (`ball.position`).
@@ -33,8 +33,13 @@ Live site: https://espaull.github.io/interactive-ball-thing/ — every push to
   line joining. Easiest code to unit-test.
 - `src/render/` — drawing; `design.ts` draws the design for the screen and
   the gallery's pictures. `palette.ts` holds the colours.
-- `src/ui.ts` — toolbar, hints, background picker, saves gallery; `main.ts`
-  wires it all up and runs the fixed-step game loop.
+- `src/ui/` — the HTML controls: `toolbar` (tool buttons, menus, hint),
+  `actions` (Follow, Home, Undo, Clear), `background`, `gallery`. Each
+  `setup…` takes the `App` (`app.ts`), which `main.ts` builds before running
+  the fixed-step game loop. Keyboard shortcuts go through
+  `input.addShortcut`, so the tools never see them.
+- `signal.ts` — `Signal`, for things several parts of the app listen to
+  (`input.actionEnded`, `playground.designChanged`, `history.changed`).
 - `src/saves.ts` — the autosave (2s after a change) and the gallery, in
   `localStorage`. What's saved is a `Layout` (`world/layout.ts`): each
   part's things, no balls or bubbles.

@@ -9,13 +9,11 @@ import { muzzle } from "./world/cannons";
 import { PORTAL_RADIUS_PX } from "./world/portals";
 import { createToolGroups } from "./tools";
 import { Input } from "./tools/input";
-import {
-  keepFocusOffButtons,
-  setupActions,
-  setupBackgroundPicker,
-  setupGallery,
-  setupToolbar,
-} from "./ui";
+import type { App } from "./app";
+import { setupActions } from "./ui/actions";
+import { setupBackgroundPicker } from "./ui/background";
+import { setupGallery } from "./ui/gallery";
+import { keepFocusOffButtons, setupToolbar } from "./ui/toolbar";
 import { Playground } from "./world/playground";
 
 const STEP = 1 / 60;
@@ -62,17 +60,18 @@ const saves = new SaveStore(browserStorage());
 startAutosave(saves, playground);
 // After the autosave's loaded, so Undo can't take the page back to empty.
 const history = new UndoHistory(playground);
-setupActions(camera, playground, input, effects, history);
-setupGallery(
-  saves,
+const app: App = {
   canvas,
-  camera,
   playground,
+  camera,
   input,
   effects,
-  background,
   history,
-);
+  saves,
+  background,
+};
+setupActions(app);
+setupGallery(app);
 
 function resize(): void {
   const dpr = window.devicePixelRatio || 1;

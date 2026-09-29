@@ -1,6 +1,7 @@
 // Undo and redo for the playground's design. After each action (a stroke, a
 // tap, Clear, loading a save), `checkpoint` notes the design if it changed,
 // and Undo puts the one before back. Balls and bubbles are left alone.
+import { Signal } from "./signal";
 import type { Layout } from "./world/layout";
 import type { Playground } from "./world/playground";
 
@@ -16,8 +17,8 @@ export class UndoHistory {
   // look).
   private current: string;
   private seen: number;
-  // Called whenever what can be undone or redone changes.
-  onChange: () => void = () => {};
+  // Whenever what can be undone or redone changes.
+  readonly changed = new Signal();
 
   constructor(private playground: Playground) {
     this.current = this.snapshot();
@@ -45,7 +46,7 @@ export class UndoHistory {
     if (this.undoStack.length > MAX_STEPS) this.undoStack.shift();
     this.redoStack = [];
     this.current = now;
-    this.onChange();
+    this.changed.emit();
   }
 
   undo(): void {
@@ -68,7 +69,7 @@ export class UndoHistory {
     this.playground.restoreLayout(JSON.parse(json) as Layout);
     this.current = json;
     this.seen = this.playground.revision;
-    this.onChange();
+    this.changed.emit();
   }
 
   private snapshot(): string {
