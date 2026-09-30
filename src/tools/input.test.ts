@@ -206,6 +206,26 @@ describe("input from the keyboard", () => {
     expect(tool.calls).toEqual([]);
   });
 
+  it("leaves typing in a text box alone", () => {
+    const { input, tool } = setUp();
+    const ran: string[] = [];
+    input.addShortcut({ key: "p", run: () => ran.push("pause") });
+    const box = document.createElement("input");
+    document.body.append(box);
+    for (const k of ["p", " ", "Backspace", "Enter"]) {
+      const event = new KeyboardEvent("keydown", {
+        key: k,
+        bubbles: true,
+        cancelable: true,
+      });
+      box.dispatchEvent(event);
+      // Space still types a space.
+      expect(event.defaultPrevented).toBe(false);
+    }
+    expect(ran).toEqual([]);
+    expect(tool.calls).toEqual([]);
+  });
+
   it("passes other keys to the tool, then ends the action", () => {
     const { tool, actions } = setUp();
     key("Escape");

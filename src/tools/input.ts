@@ -395,6 +395,8 @@ export class Input {
   // --- Keys and the wheel ---
 
   private onKeyDown = (e: KeyboardEvent) => {
+    // Typing in a text box (the level editor's) is just typing.
+    if (isTextBox(e.target)) return;
     if (e.key === " ") {
       // Stops the page scrolling, and a focused toolbar button being pressed.
       e.preventDefault();
@@ -421,7 +423,7 @@ export class Input {
   };
 
   private onKeyUp = (e: KeyboardEvent) => {
-    if (e.key !== " ") return;
+    if (e.key !== " " || isTextBox(e.target)) return;
     e.preventDefault();
     this.spaceHeld = false;
     this.updateCursor();
@@ -442,4 +444,12 @@ export class Input {
     const dy = e.shiftKey && e.deltaX === 0 ? 0 : e.deltaY;
     this.camera.panByScreen(-dx, -dy);
   };
+}
+
+function isTextBox(target: EventTarget | null): boolean {
+  return (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement
+  );
 }
