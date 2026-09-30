@@ -6,7 +6,7 @@ import { distance, type Point } from "../geometry/point";
 import { smoothStroke } from "../geometry/stroke";
 import type { DownResult, Overlay, Tool, ToolContext } from "./tool";
 
-// Ignore pointer moves shorter than this while drawing round a shape.
+// Ignore pointer moves shorter than this while drawing.
 const MIN_POINT_SPACING_PX = 4;
 // Screen pixels a press can wander and still be a tap.
 const TAP_PX = 10;
@@ -104,5 +104,61 @@ export class RockTool extends ShapeTool {
 
   protected add(outline: Point[]): void {
     this.ctx.playground.rocks.add(outline);
+  }
+}
+
+// Paint a strip of spikes: balls and bubbles that touch it pop.
+export class SpikesTool implements Tool {
+  label = "Spikes";
+  icon = "🌵";
+  title = "Paint spikes to keep away from";
+  cursor = "crosshair";
+  hints = {
+    mouse:
+      "Drag to paint spikes · balls that touch them pop, and the rider goes back to the start · the eraser rubs spikes out",
+    touch:
+      "Drag to paint spikes · balls that touch them pop, and the rider goes back to the start",
+  };
+  popsBubbles = false;
+  supply = "terrain" as const;
+  editorOnly = true;
+
+  // The strip being painted, or null when not painting.
+  private stroke: Point[] | null = null;
+
+  constructor(private ctx: ToolContext) {}
+
+  get busy(): boolean {
+    return this.stroke !== null;
+  }
+
+  down(p: Point): DownResult {
+    if (this.ctx.budget.left("terrain") < 1) return "none";
+    this.stroke = [p];
+    return "drag";
+  }
+
+  move(p: Point): void {
+    const stroke = this.stroke;
+    if (stroke && distance(stroke.at(-1)!, p) >= MIN_POINT_SPACING_PX) {
+      stroke.push(p);
+    }
+  }
+
+  up(): void {
+    if (this.stroke) this.ctx.playground.spikes.add(smoothStroke(this.stroke));
+    this.cancel();
+  }
+
+  cancel(): void {
+    this.stroke = null;
+  }
+
+  overlay(): Partial<Overlay> {
+    const stroke = this.stroke;
+    if (!stroke || stroke.length < 2) return {};
+    return {
+      terrainPreview: { kind: "spikes", points: smoothStroke(stroke) },
+    };
   }
 }

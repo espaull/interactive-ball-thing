@@ -21,8 +21,8 @@ export interface Overlay {
   portalPending: { end: PortalEnd; color: string } | null;
   // Where a cannon being aimed will send its balls.
   trajectory: Point[] | null;
-  // Terrain being drawn: a rock's outline so far.
-  terrainPreview: { kind: "rock"; points: Point[] } | null;
+  // Terrain being drawn: a rock's outline so far, or spikes being painted.
+  terrainPreview: { kind: "rock" | "spikes"; points: Point[] } | null;
 }
 
 // What the tools share.

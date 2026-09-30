@@ -65,7 +65,14 @@ export class Effects {
   readonly confetti: Confetti[] = [];
   readonly hearts: LittleHeart[] = [];
 
-  pop(x: number, y: number, radius: number): void {
+  // A bubble bursting, or with `colors` for its droplets, anything else.
+  pop(
+    x: number,
+    y: number,
+    radius: number,
+    // (The bubble colours' last one is the first again.)
+    colors: readonly string[] = BUBBLE_COLORS.slice(0, -1),
+  ): void {
     this.rings.push({
       x,
       y,
@@ -86,7 +93,7 @@ export class Effects {
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
         radius: 1.5 + Math.random() * 2,
-        color: BUBBLE_COLORS[i % (BUBBLE_COLORS.length - 1)],
+        color: colors[i % colors.length],
         age: 0,
         life: 0.4 + Math.random() * 0.3,
       });

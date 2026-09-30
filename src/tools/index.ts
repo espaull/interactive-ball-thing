@@ -12,7 +12,7 @@ import { MoveTool } from "./move";
 import { PencilTool } from "./pencil";
 import { PortalTool } from "./portal";
 import { BallTool, BubbleTool, SledgeTool } from "./spawn";
-import { RockTool } from "./terrain";
+import { RockTool, SpikesTool } from "./terrain";
 import type { Tool, ToolContext } from "./tool";
 
 export type { Overlay, Tool } from "./tool";
@@ -49,7 +49,7 @@ export function createToolGroups(
       new BubbleTool(ctx),
       new CannonTool(ctx),
     ],
-    [new RockTool(ctx)],
+    [new RockTool(ctx), new SpikesTool(ctx)],
     [new StartTool(draft), new GoalTool(draft), new HeartTool(draft)],
   ];
 }

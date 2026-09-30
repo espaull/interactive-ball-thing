@@ -13,7 +13,7 @@ import { drawHeart } from "./heart";
 import type { Point } from "../geometry/point";
 import { drawPortal } from "./portal";
 import { drawSledge } from "./sledge";
-import { drawRock } from "./terrain";
+import { drawRock, drawSpikes } from "./terrain";
 
 // A level's hearts still to collect, and (in the editor) where its rider
 // starts, drawn as a ghost.
@@ -77,7 +77,11 @@ export function render(
   // bubbles go over everything, so balls look like they drop into portals.
   drawDesign(ctx, playground, time);
 
-  if (terrainPreview) drawRock(ctx, terrainPreview.points, 0.6);
+  if (terrainPreview) {
+    const { kind, points } = terrainPreview;
+    if (kind === "rock") drawRock(ctx, points, 0.6);
+    else drawSpikes(ctx, points, 0.6);
+  }
 
   if (boostPreview) drawBoostStrip(ctx, boostPreview, time, 0.6);
 

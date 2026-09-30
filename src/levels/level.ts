@@ -50,7 +50,11 @@ export function usage(layout: Layout) {
     ink: length(layout.lines),
     boost: length(layout.boosts),
     portals: layout.portals.length,
-    others: layout.cups.length + layout.cannons.length + layout.rocks.length,
+    others:
+      layout.cups.length +
+      layout.cannons.length +
+      layout.rocks.length +
+      layout.spikes.length,
   };
 }
 

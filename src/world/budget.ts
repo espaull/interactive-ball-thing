@@ -15,8 +15,8 @@ export interface Limits {
   // Tapping to drop balls, sledges and bubbles (which aren't counted: it's
   // allowed or not).
   drops: number;
-  // Pieces of terrain (rocks), counted. Levels never give the player any,
-  // as it's what levels are made of.
+  // Pieces of terrain (rocks and strips of spikes), counted. Levels never
+  // give the player any, as it's what levels are made of.
   terrain: number;
 }
 
@@ -62,7 +62,8 @@ export class Budget {
   }
 
   private used(supply: Supply): number {
-    const { lines, boosts, portals, cups, cannons, rocks } = this.playground;
+    const { lines, boosts, portals, cups, cannons, rocks, spikes } =
+      this.playground;
     const own = <T extends { fixed: boolean }>(things: readonly T[]) =>
       things.filter((thing) => !thing.fixed);
     switch (supply) {
@@ -79,7 +80,7 @@ export class Budget {
       case "drops":
         return 0;
       case "terrain":
-        return own(rocks.all).length;
+        return own(rocks.all).length + own(spikes.all).length;
     }
   }
 }

@@ -20,6 +20,10 @@ function designed(): Playground {
     { x: 600, y: 500 },
     { x: 550, y: 420 },
   ]);
+  pg.spikes.add([
+    { x: 800, y: 700 },
+    { x: 900, y: 690 },
+  ]);
   pg.addBall(200, 200);
   pg.addBubble(250, 250);
   return pg;
@@ -91,7 +95,8 @@ describe("layouts", () => {
     expect(layout.portals[0].b.aim).toBe(2);
     expect(layout.cups).toEqual([{ x: 5, y: 6 }]);
     expect(layout.cannons[0]).toMatchObject({ power: 1, active: true });
-    // Saved before there were rocks.
+    // Saved before there was terrain.
     expect(layout.rocks).toEqual([]);
+    expect(layout.spikes).toEqual([]);
   });
 });

@@ -51,6 +51,12 @@ playground.onPop = (x, y, radius) => {
   playPop(radius);
 };
 
+// A ball popping on spikes: a splash in its colour.
+playground.onSpiked = (ball, { x, y }) => {
+  effects.pop(x, y, ball.radius, [ball.color]);
+  playPop(ball.radius);
+};
+
 // A cannon firing: a grey puff at the muzzle, and a thump.
 playground.onFire = (cannon) => {
   const { x, y } = muzzle(cannon);

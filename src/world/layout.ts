@@ -5,6 +5,7 @@ import { parseLines, type SavedLines } from "./lines";
 import { parsePortals, type SavedPortals } from "./portals";
 import { parseRocks, type SavedRocks } from "./rocks";
 import { isRecord } from "./saved";
+import { parseSpikes, type SavedSpikes } from "./spikes";
 
 // Everything that makes up a playground's design, as plain data that can be
 // saved and loaded: each part's things (see part.ts). Balls and bubbles
@@ -17,6 +18,7 @@ export interface Layout {
   cups: SavedCups;
   cannons: SavedCannons;
   rocks: SavedRocks;
+  spikes: SavedSpikes;
 }
 
 export function emptyLayout(): Layout {
@@ -28,6 +30,7 @@ export function emptyLayout(): Layout {
     cups: [],
     cannons: [],
     rocks: [],
+    spikes: [],
   };
 }
 
@@ -45,5 +48,6 @@ export function parseLayout(data: unknown): Layout | null {
     cups: parseCups(data.cups),
     cannons: parseCannons(data.cannons),
     rocks: parseRocks(data.rocks),
+    spikes: parseSpikes(data.spikes),
   };
 }

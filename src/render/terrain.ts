@@ -1,6 +1,18 @@
 // Drawing the terrain a level's made of.
-import { boundsOf, type Point } from "../geometry/point";
-import { ROCK_BOTTOM, ROCK_EDGE, ROCK_TOP } from "../palette";
+import { boundsOf, distance, lerp, type Point } from "../geometry/point";
+import {
+  ROCK_BOTTOM,
+  ROCK_EDGE,
+  ROCK_TOP,
+  SPIKE_COLOR,
+  SPIKE_EDGE,
+} from "../palette";
+import { SPIKE_REACH_PX } from "../world/spikes";
+
+// Spikes are this far apart along their strip (pixels), and poke out a
+// little past where they pop things, so touching them looks fair.
+const SPIKE_SPACING_PX = 10;
+const SPIKE_HEIGHT_PX = SPIKE_REACH_PX + 3;
 
 function tracePath(
   ctx: CanvasRenderingContext2D,
@@ -33,6 +45,65 @@ export function drawRock(
   ctx.lineWidth = 3;
   ctx.lineJoin = "round";
   ctx.strokeStyle = ROCK_EDGE;
+  ctx.stroke();
+  ctx.restore();
+}
+
+// Call `at` every `spacing` pixels along a line (starting half a spacing
+// in), with the way the line runs there (a unit vector).
+function along(
+  points: Point[],
+  spacing: number,
+  at: (p: Point, direction: Point) => void,
+): void {
+  let next = spacing / 2;
+  let travelled = 0;
+  for (let i = 0; i < points.length - 1; i++) {
+    const a = points[i];
+    const b = points[i + 1];
+    const length = distance(a, b);
+    if (length === 0) continue;
+    const direction = { x: (b.x - a.x) / length, y: (b.y - a.y) / length };
+    while (next <= travelled + length) {
+      at(lerp(a, b, (next - travelled) / length), direction);
+      next += spacing;
+    }
+    travelled += length;
+  }
+}
+
+// A strip of spikes, pointing out both sides. `alpha` fades it (for one
+// still being painted).
+export function drawSpikes(
+  ctx: CanvasRenderingContext2D,
+  points: Point[],
+  alpha = 1,
+): void {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.beginPath();
+  const half = SPIKE_SPACING_PX / 2;
+  along(points, SPIKE_SPACING_PX, (p, d) => {
+    for (const side of [1, -1]) {
+      ctx.moveTo(p.x - d.x * half, p.y - d.y * half);
+      ctx.lineTo(
+        p.x - d.y * side * SPIKE_HEIGHT_PX,
+        p.y + d.x * side * SPIKE_HEIGHT_PX,
+      );
+      ctx.lineTo(p.x + d.x * half, p.y + d.y * half);
+    }
+  });
+  ctx.fillStyle = SPIKE_COLOR;
+  ctx.fill();
+  ctx.lineWidth = 1.5;
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = SPIKE_EDGE;
+  ctx.stroke();
+
+  // The strip they stick out of.
+  tracePath(ctx, points, false);
+  ctx.lineWidth = 5;
+  ctx.lineCap = "round";
   ctx.stroke();
   ctx.restore();
 }

@@ -11,6 +11,7 @@ import { Lines } from "./lines";
 import type { Grabbed, Part } from "./part";
 import { Portals, type Teleport } from "./portals";
 import { Rocks } from "./rocks";
+import { Spikes } from "./spikes";
 import { Signal } from "../signal";
 import { PX_PER_M, toMetres, toPixels } from "./units";
 
@@ -22,6 +23,7 @@ export type { Line, LineEnd } from "./lines";
 export type { Grabbed } from "./part";
 export type { PortalEnd, PortalPair, Teleport } from "./portals";
 export type { Rock } from "./rocks";
+export type { SpikeStrip } from "./spikes";
 
 const BALL_RADIUS_M = 0.4;
 // A sledge is a flat block 48px long and 12px tall (the runners and the
@@ -101,9 +103,9 @@ function findAt<T extends Thing>(
 }
 
 // Everything in the world: the physics simulation, the design (lines, boost
-// strips, portals, cups and cannons, and the terrain: rocks, each kept by
-// its own part), and the balls and bubbles. Positions in and out are in
-// pixels.
+// strips, portals, cups and cannons, and the terrain: rocks and spikes,
+// each kept by its own part), and the balls and bubbles. Positions in and
+// out are in pixels.
 export class Playground {
   // y grows downwards, matching screen coordinates.
   readonly world = new World({ gravity: { x: 0, y: 10 } });
@@ -133,12 +135,14 @@ export class Playground {
   readonly cups = new Cups(this.world, this.changed);
   readonly cannons = new Cannons(() => this.time, this.changed);
   readonly rocks = new Rocks(this.world, this.changed);
+  readonly spikes = new Spikes(this.world, this.changed);
   // From the top down, as they're drawn, so what's picked up is what's on
   // top.
   private readonly parts: Part<unknown>[] = [
     this.cannons,
     this.portals,
     this.cups,
+    this.spikes,
     this.boosts,
     this.lines,
     this.rocks,
@@ -161,6 +165,8 @@ export class Playground {
   onCatch: (cup: Cup) => void = () => {};
   // Called whenever a cannon fires, for the puff and thump.
   onFire: (cannon: Cannon) => void = () => {};
+  // Called whenever a ball (or sledge) pops on spikes, where it was.
+  onSpiked: (ball: Ball, at: Point) => void = () => {};
 
   // Seconds of simulation so far.
   get now(): number {
@@ -193,6 +199,7 @@ export class Playground {
     this.crossings.afterStep(this.time);
     for (const bubble of this.bubbleBehaviour.afterStep(this.time))
       this.popBubble(bubble);
+    this.popOnSpikes();
     const things = [...this.balls, ...this.bubbles].map((thing) => thing.body);
     for (const teleport of this.portals.teleport(things)) {
       this.onTeleport(teleport);
@@ -253,6 +260,7 @@ export class Playground {
       cups: this.cups.save(),
       cannons: this.cannons.save(),
       rocks: this.rocks.save(),
+      spikes: this.spikes.save(),
     };
   }
 
@@ -266,6 +274,7 @@ export class Playground {
       cups: this.cups.save(true),
       cannons: this.cannons.save(true),
       rocks: this.rocks.save(true),
+      spikes: this.spikes.save(true),
     };
   }
 
@@ -285,6 +294,7 @@ export class Playground {
     this.cups.load(layout.cups);
     this.cannons.load(layout.cannons);
     this.rocks.load(layout.rocks);
+    this.spikes.load(layout.spikes);
   }
 
   // Replace the fixed things (a level's pieces) with these. An empty layout
@@ -296,6 +306,7 @@ export class Playground {
     this.cups.load(layout.cups, true);
     this.cannons.load(layout.cannons, true);
     this.rocks.load(layout.rocks, true);
+    this.spikes.load(layout.spikes, true);
   }
 
   // Fire every cannon whose next shot is due.
@@ -305,6 +316,22 @@ export class Playground {
       const ball = this.addBall(x, y);
       ball.body.setLinearVelocity(toMetres(launchVelocity(cannon)));
       this.onFire(cannon);
+    }
+  }
+
+  // Balls and bubbles touching spikes pop.
+  private popOnSpikes(): void {
+    if (this.spikes.isEmpty) return;
+    const touching = this.spikes.touching();
+    if (touching.size === 0) return;
+    for (const ball of [...this.balls]) {
+      if (!touching.has(ball.body)) continue;
+      const at = ball.position;
+      this.removeBall(ball);
+      this.onSpiked(ball, at);
+    }
+    for (const bubble of [...this.bubbles]) {
+      if (touching.has(bubble.body)) this.popBubble(bubble);
     }
   }
 

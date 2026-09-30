@@ -105,6 +105,25 @@ describe("playing a level", () => {
     expect(playground.layout().lines).toHaveLength(1);
   });
 
+  it("puts a rider that pops on spikes back at the start", () => {
+    const level = dropLevel();
+    // Spikes across the way down, above the heart.
+    level.pieces = {
+      ...level.pieces,
+      spikes: [
+        [
+          { x: 150, y: 200 },
+          { x: 250, y: 200 },
+        ],
+      ],
+    };
+    const { playground, play, events } = setUp(level);
+    play.go();
+    run(playground, play, 2);
+    expect(events).toEqual(["lost"]);
+    expect(riderAt(playground)).toEqual({ x: 200, y: 100 });
+  });
+
   it("counts a rider that's stopped moving as stuck", () => {
     const level = dropLevel();
     level.rider = "sledge";

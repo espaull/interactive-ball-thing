@@ -64,3 +64,7 @@ export const CANNON_WHEEL = "#92400e";
 export const ROCK_TOP = "#b8b2ac";
 export const ROCK_BOTTOM = "#78716c";
 export const ROCK_EDGE = "#57534e";
+
+// Spikes: pale steel points on a dark strip.
+export const SPIKE_COLOR = "#e2e8f0";
+export const SPIKE_EDGE = "#475569";

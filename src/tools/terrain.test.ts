@@ -6,7 +6,7 @@ import { fitsLimits } from "../levels/level";
 import { Budget } from "../world/budget";
 import { emptyLayout } from "../world/layout";
 import { Playground } from "../world/playground";
-import { RockTool } from "./terrain";
+import { RockTool, SpikesTool } from "./terrain";
 import type { Tool, ToolContext } from "./tool";
 
 function setUp() {
@@ -37,6 +37,24 @@ function circle(x: number, y: number, radius: number): Point[] {
   }
   return points;
 }
+
+describe("the spikes tool", () => {
+  it("paints a strip of spikes, but not with a tap", () => {
+    const { playground, budget, ctx } = setUp();
+    const tool = new SpikesTool(ctx);
+    tool.down({ x: 0, y: 0 });
+    tool.up();
+    expect(playground.spikes.all).toHaveLength(0);
+    drag(
+      tool,
+      [0, 10, 20, 30, 40, 50].map((x) => ({ x, y: 0 })),
+    );
+    expect(playground.spikes.all).toHaveLength(1);
+    expect(tool.editorOnly).toBe(true);
+    budget.limits = { ...budget.limits, terrain: 0 };
+    expect(tool.down({ x: 0, y: 0 })).toBe("none");
+  });
+});
 
 describe("the rock tool", () => {
   it("makes a rock of what's drawn round", () => {
