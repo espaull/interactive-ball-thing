@@ -3,7 +3,8 @@ import type { Camera } from "../camera";
 import type { Effects } from "./effects";
 import type { GuideView } from "../guides";
 import type { Overlay } from "../tools";
-import { Sledge, type Playground } from "../world/playground";
+import { Ball, Sledge, type Playground } from "../world/playground";
+import type { Rider } from "../levels/level";
 import { ACCENT, ERASER_COLOR, PREVIEW_COLOR } from "../palette";
 import { drawBoostStrip } from "./boost";
 import { drawBubble } from "./bubble";
@@ -12,6 +13,13 @@ import { drawHeart } from "./heart";
 import type { Point } from "../geometry/point";
 import { drawPortal } from "./portal";
 import { drawSledge } from "./sledge";
+
+// A level's hearts still to collect, and (in the editor) where its rider
+// starts, drawn as a ghost.
+export interface LevelMarks {
+  hearts: Point[];
+  start: (Point & { rider: Rider }) | null;
+}
 
 // The background pattern is fixed to the world, so you can see the view
 // moving even over empty space.
@@ -44,8 +52,7 @@ export function render(
   overlay: Overlay,
   effects: Effects,
   guides: GuideView,
-  // A level's hearts still to collect.
-  hearts: Point[],
+  marks: LevelMarks,
 ): void {
   const {
     preview,
@@ -137,34 +144,15 @@ export function render(
     });
   }
 
-  hearts.forEach(({ x, y }, i) => drawHeart(ctx, x, y, time, i * 1.7));
+  marks.hearts.forEach(({ x, y }, i) => drawHeart(ctx, x, y, time, i * 1.7));
+  if (marks.start) drawGhost(ctx, marks.start, time);
 
   drawTrail(ctx, guides);
   drawPath(ctx, guides, camera.zoom);
 
   for (const ball of playground.balls) {
-    if (ball instanceof Sledge) {
-      drawSledge(ctx, ball, time);
-      continue;
-    }
-    const { x, y } = ball.position;
-    const angle = ball.angle;
-
-    ctx.fillStyle = ball.color;
-    ctx.beginPath();
-    ctx.arc(x, y, ball.radius, 0, Math.PI * 2);
-    ctx.fill();
-
-    // A white stripe so you can see the ball spinning as it rolls.
-    ctx.strokeStyle = "#ffffffb0";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(
-      x + Math.cos(angle) * ball.radius * 0.8,
-      y + Math.sin(angle) * ball.radius * 0.8,
-    );
-    ctx.stroke();
+    if (ball instanceof Sledge) drawSledge(ctx, ball, time);
+    else drawBall(ctx, ball);
   }
 
   // Bubbles go on top, since you can see through them.
@@ -236,4 +224,44 @@ function drawPath(
       ctx.stroke();
     }
   }
+}
+
+type BallLook = Pick<Ball, "position" | "angle" | "radius" | "color">;
+
+function drawBall(ctx: CanvasRenderingContext2D, ball: BallLook): void {
+  const { x, y } = ball.position;
+  const angle = ball.angle;
+
+  ctx.fillStyle = ball.color;
+  ctx.beginPath();
+  ctx.arc(x, y, ball.radius, 0, Math.PI * 2);
+  ctx.fill();
+
+  // A white stripe so you can see the ball spinning as it rolls.
+  ctx.strokeStyle = "#ffffffb0";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(
+    x + Math.cos(angle) * ball.radius * 0.8,
+    y + Math.sin(angle) * ball.radius * 0.8,
+  );
+  ctx.stroke();
+}
+
+// Where a level's rider starts, in the editor: a faded ball or sledge.
+function drawGhost(
+  ctx: CanvasRenderingContext2D,
+  start: Point & { rider: Rider },
+  time: number,
+): void {
+  const position = { x: start.x, y: start.y };
+  const color = "#64748b";
+  ctx.globalAlpha = 0.5;
+  if (start.rider === "sledge") {
+    drawSledge(ctx, { position, angle: 0, facing: 1, color, speed: 0 }, time);
+  } else {
+    drawBall(ctx, { position, angle: 0, radius: 16, color });
+  }
+  ctx.globalAlpha = 1;
 }

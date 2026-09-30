@@ -19,6 +19,19 @@ Live site: https://espaull.github.io/interactive-ball-thing/ — every push to
 - `npx tsc -p .` — type-check
 - `npm run format` — Prettier (default settings); `format:check` to verify
 
+## Making levels
+
+Run `npm run dev` and pick 🛠️ Editor on the front screen (it's only there
+in dev). Pick a level or ➕ New level, draw it with the normal tools, and
+place its start, goal and hearts with the Start/Goal/Heart tools. Set its
+id, name, tip, rider and limits in the panel. **Try it** plays it for
+real; winning with every heart (having placed something) records that
+win's pieces as its solution, and only then can it be **Saved**. Saving
+writes `src/levels/data/<id>.json` (new ones go on the end of
+`order.json`; reorder by editing that) and the page reloads back into the
+editor. Commit the files like any other change. To delete a level, delete
+its file and take it out of `order.json`.
+
 ## Layout
 
 - `src/world/` — the simulation. `playground.ts` owns the Planck world,
@@ -56,7 +69,10 @@ Live site: https://espaull.github.io/interactive-ball-thing/ — every push to
   the order `data/order.json` lists, read by `parseLevel` (`level.ts`) and
   loaded by `levels.ts`. Each file keeps a `solution`: pieces that win
   with every heart, which `levels.test.ts` replays to prove every level can
-  still be finished within its limits. `play.ts` (`LevelPlay`) fixes a
+  still be finished within its limits (and that just pressing Go doesn't
+  win). `draft.ts` is the level being edited; the editor itself is
+  `ui/editor.ts`, and `dev/level-files.ts` is the dev server plugin that
+  writes the files. `play.ts` (`LevelPlay`) fixes a
   level's pieces, sets the budget, keeps the rider waiting paused until
   Go, collects hearts, wins at the goal cup, and resets a lost or stuck
   rider.

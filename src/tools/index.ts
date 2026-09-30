@@ -1,10 +1,12 @@
 import type { Camera } from "../camera";
+import type { LevelDraft } from "../levels/draft";
 import type { Budget } from "../world/budget";
 import type { Playground } from "../world/playground";
 import { BoostTool } from "./boost";
 import { CannonTool } from "./cannon";
 import { CupTool } from "./cup";
 import { CurveTool } from "./curve";
+import { GoalTool, HeartTool, StartTool } from "./editor";
 import { EraserTool } from "./eraser";
 import { MoveTool } from "./move";
 import { PencilTool } from "./pencil";
@@ -25,6 +27,8 @@ export function createToolGroups(
   playground: Playground,
   camera: Camera,
   budget: Budget,
+  // The level being made, for the editor's tools.
+  draft: LevelDraft,
 ): Tool[][] {
   const ctx: ToolContext = {
     playground,
@@ -44,5 +48,6 @@ export function createToolGroups(
       new BubbleTool(ctx),
       new CannonTool(ctx),
     ],
+    [new StartTool(draft), new GoalTool(draft), new HeartTool(draft)],
   ];
 }

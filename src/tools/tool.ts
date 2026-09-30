@@ -52,6 +52,8 @@ export interface Tool {
   // only offers it if the level allows some, and shows how much is left.
   // Tools without one (like the eraser) are always offered.
   supply?: Supply;
+  // Only offered in the level editor.
+  editorOnly?: boolean;
   // How much of its supply what's being drawn right now uses, so the
   // toolbar can show it running down.
   readonly using?: number;

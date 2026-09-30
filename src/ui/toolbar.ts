@@ -40,6 +40,8 @@ export interface Toolbar {
   showSupplies(): void;
   // A line shown above the tool's hint (a level's tip), or "" for none.
   setNote(note: string): void;
+  // Offer the level editor's tools too (or not).
+  setEditing(editing: boolean): void;
 }
 
 // One toolbar button per group of tools (before the divider), and the hint
@@ -61,8 +63,11 @@ export function setupToolbar(
   // The tool each group button currently stands for.
   const chosen = groups.map((group) => group[0]);
   let note = "";
+  let editing = false;
 
-  const offered = (tool: Tool) => !tool.supply || budget.allows(tool.supply);
+  const offered = (tool: Tool) =>
+    (!tool.editorOnly || editing) &&
+    (!tool.supply || budget.allows(tool.supply));
 
   const buttons = groups.map((group, g) => {
     const button = document.createElement("button");
@@ -197,6 +202,10 @@ export function setupToolbar(
       }
     },
     showSupplies: render,
+    setEditing(on) {
+      editing = on;
+      this.update();
+    },
     setNote(text) {
       note = text;
       showHint();

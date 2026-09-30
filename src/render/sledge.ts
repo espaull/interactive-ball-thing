@@ -1,6 +1,13 @@
 import { LINE_COLOR } from "../palette";
 import type { Sledge } from "../world/playground";
 
+// What drawing a sledge needs to know (a sledge, or the ghost of one where
+// a level's rider starts).
+export type SledgeLook = Pick<
+  Sledge,
+  "position" | "angle" | "facing" | "color" | "speed"
+>;
+
 // A sledge and its rider, in homage to Line Rider: a seat in the sledge's
 // colour on a runner that curls up at the front, and a stick-figure rider
 // holding a rope to the curl, with a scarf (the same colour) streaming out
@@ -8,7 +15,7 @@ import type { Sledge } from "../world/playground";
 // sledge (48 × 12px, centred on its position); the rider is just drawn.
 export function drawSledge(
   ctx: CanvasRenderingContext2D,
-  sledge: Sledge,
+  sledge: SledgeLook,
   time: number,
 ): void {
   const { x, y } = sledge.position;

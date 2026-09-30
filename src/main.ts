@@ -3,7 +3,7 @@ import { Camera } from "./camera";
 import { Guides } from "./guides";
 import { UndoHistory } from "./history";
 import { Effects } from "./render/effects";
-import { render } from "./render/render";
+import { render, type LevelMarks } from "./render/render";
 import { browserStorage, SaveStore, startAutosave } from "./saves";
 import {
   playCheer,
@@ -13,6 +13,7 @@ import {
   playThump,
   playWhoosh,
 } from "./sound";
+import { LevelDraft } from "./levels/draft";
 import { LevelPlay } from "./levels/play";
 import { Budget } from "./world/budget";
 import { muzzle } from "./world/cannons";
@@ -23,6 +24,7 @@ import type { App } from "./app";
 import { setupActions } from "./ui/actions";
 import { setupBackgroundPicker } from "./ui/background";
 import { setupGallery } from "./ui/gallery";
+import { setupEditor } from "./ui/editor";
 import { setupLevels } from "./ui/levels";
 import { keepFocusOffButtons, setupToolbar } from "./ui/toolbar";
 import { Playground } from "./world/playground";
@@ -36,7 +38,9 @@ const playground = new Playground();
 const camera = new Camera();
 const effects = new Effects();
 const budget = new Budget(playground);
-const toolGroups = createToolGroups(playground, camera, budget);
+// The level being made in the editor (dev only).
+const draft = new LevelDraft();
+const toolGroups = createToolGroups(playground, camera, budget, draft);
 const input = new Input(canvas, playground, camera, toolGroups[0][0]);
 const guides = new Guides();
 const levels = new LevelPlay(playground, budget);
@@ -106,7 +110,15 @@ const app: App = {
 };
 setupActions(app);
 setupGallery(app);
-setupLevels(app);
+const screens = setupLevels(app);
+if (import.meta.env.DEV) setupEditor(app, screens, draft);
+
+// A level's hearts to draw, and in the editor where its rider starts.
+function levelMarks(): LevelMarks {
+  if (screens.mode !== "editor") return { hearts: levels.hearts, start: null };
+  const { start, rider } = draft;
+  return { hearts: draft.hearts, start: start && { ...start, rider } };
+}
 
 function resize(): void {
   const dpr = window.devicePixelRatio || 1;
@@ -162,7 +174,7 @@ function frame(now: number): void {
     input.overlay,
     effects,
     guides.view(playground),
-    levels.hearts,
+    levelMarks(),
   );
   requestAnimationFrame(frame);
 }

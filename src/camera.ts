@@ -11,7 +11,8 @@ const MAX_FIT_ZOOM = 1.25;
 export interface Margins {
   top: number;
   bottom: number;
-  sides: number;
+  left: number;
+  right: number;
 }
 // How quickly the camera catches up with the ball (higher = snappier).
 const FOLLOW_SPEED = 5;
@@ -62,7 +63,7 @@ export class Camera {
 
   // Show all of `box`, as big as fits between the margins.
   fit(box: Box, margins: Margins): void {
-    const width = Math.max(1, this.width - margins.sides * 2);
+    const width = Math.max(1, this.width - margins.left - margins.right);
     const height = Math.max(1, this.height - margins.top - margins.bottom);
     const zoom = Math.min(
       width / (box.right - box.left),
@@ -70,7 +71,9 @@ export class Camera {
     );
     this.zoom = Math.max(MIN_ZOOM, Math.min(MAX_FIT_ZOOM, zoom));
     // The box's middle in the middle of the space between the margins.
-    this.x = (box.left + box.right) / 2;
+    this.x =
+      (box.left + box.right) / 2 -
+      (margins.left - margins.right) / 2 / this.zoom;
     this.y =
       (box.top + box.bottom) / 2 -
       (margins.top - margins.bottom) / 2 / this.zoom;
