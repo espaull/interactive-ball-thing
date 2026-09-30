@@ -30,7 +30,7 @@ abstract class ShapeTool implements Tool {
 
   // How the stroke's smoothed into a shape (see `outlineShape`).
   protected abstract tolerance: number;
-  protected abstract kind: "rock";
+  protected abstract kind: "rock" | "noDraw";
   // The shape a tap at `p` makes.
   protected abstract readyMade(p: Point): Point[];
   protected abstract add(outline: Point[]): void;
@@ -104,6 +104,33 @@ export class RockTool extends ShapeTool {
 
   protected add(outline: Point[]): void {
     this.ctx.playground.rocks.add(outline);
+  }
+}
+
+// How far a ready-made no-drawing area reaches, and how many sides it has
+// (enough to look round).
+const AREA_RADIUS_PX = 70;
+const AREA_SIDES = 32;
+
+export class NoDrawTool extends ShapeTool {
+  label = "No drawing";
+  icon = "🚫";
+  title = "Mark an area nothing can be built in";
+  hints = {
+    mouse:
+      "Drag round an area where nothing can be drawn or put, or click for a round one · what's there already stays · rub its edge with the eraser to remove it",
+    touch:
+      "Draw round an area where nothing can be drawn or put, or tap for a round one · what's there already stays",
+  };
+  protected tolerance = 1.5;
+  protected kind = "noDraw" as const;
+
+  protected readyMade(p: Point): Point[] {
+    return roundShape(p, AREA_RADIUS_PX, new Array(AREA_SIDES).fill(1));
+  }
+
+  protected add(outline: Point[]): void {
+    this.ctx.playground.noDraw.add(outline);
   }
 }
 

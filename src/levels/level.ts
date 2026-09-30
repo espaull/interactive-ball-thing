@@ -54,7 +54,8 @@ export function usage(layout: Layout) {
       layout.cups.length +
       layout.cannons.length +
       layout.rocks.length +
-      layout.spikes.length,
+      layout.spikes.length +
+      layout.noDraw.length,
   };
 }
 

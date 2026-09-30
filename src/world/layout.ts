@@ -2,6 +2,7 @@ import { parseBoosts, type SavedBoosts } from "./boosts";
 import { parseCannons, type SavedCannons } from "./cannons";
 import { parseCups, type SavedCups } from "./cups";
 import { parseLines, type SavedLines } from "./lines";
+import { parseNoDraw, type SavedNoDraw } from "./no-draw";
 import { parsePortals, type SavedPortals } from "./portals";
 import { parseRocks, type SavedRocks } from "./rocks";
 import { isRecord } from "./saved";
@@ -19,6 +20,7 @@ export interface Layout {
   cannons: SavedCannons;
   rocks: SavedRocks;
   spikes: SavedSpikes;
+  noDraw: SavedNoDraw;
 }
 
 export function emptyLayout(): Layout {
@@ -31,6 +33,7 @@ export function emptyLayout(): Layout {
     cannons: [],
     rocks: [],
     spikes: [],
+    noDraw: [],
   };
 }
 
@@ -49,5 +52,6 @@ export function parseLayout(data: unknown): Layout | null {
     cannons: parseCannons(data.cannons),
     rocks: parseRocks(data.rocks),
     spikes: parseSpikes(data.spikes),
+    noDraw: parseNoDraw(data.noDraw),
   };
 }

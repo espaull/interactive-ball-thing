@@ -68,3 +68,7 @@ export const ROCK_EDGE = "#57534e";
 // Spikes: pale steel points on a dark strip.
 export const SPIKE_COLOR = "#e2e8f0";
 export const SPIKE_EDGE = "#475569";
+
+// No-drawing areas: red stripes inside a dashed red edge. Drawn with an
+// alpha added, e.g. `${NO_DRAW_COLOR}40`.
+export const NO_DRAW_COLOR = "#ef4444";

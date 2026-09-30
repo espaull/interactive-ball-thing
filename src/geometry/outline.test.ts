@@ -3,6 +3,7 @@ import {
   distanceToOutline,
   isInside,
   outlineShape,
+  outsideOutlines,
   roundShape,
   tidyOutline,
 } from "./outline";
@@ -63,5 +64,48 @@ describe("outlines", () => {
     expect(shape[0].x).toBeCloseTo(150);
     expect(shape[1].y).toBeCloseTo(125);
     expect(isInside({ x: 100, y: 100 }, shape)).toBe(true);
+  });
+});
+
+describe("lines across outlines", () => {
+  const across = [
+    { x: -50, y: 50 },
+    { x: 50, y: 50 },
+    { x: 150, y: 50 },
+  ];
+
+  it("are cut at the edges, keeping what's outside", () => {
+    const pieces = outsideOutlines(across, [square]);
+    expect(pieces).toHaveLength(2);
+    expect(pieces[0][0]).toEqual({ x: -50, y: 50 });
+    expect(pieces[0].at(-1)!.x).toBeCloseTo(0);
+    expect(pieces[1][0].x).toBeCloseTo(100);
+    expect(pieces[1].at(-1)).toEqual({ x: 150, y: 50 });
+  });
+
+  it("are kept as they are when they miss", () => {
+    const line = [
+      { x: -50, y: 150 },
+      { x: 150, y: 150 },
+    ];
+    expect(outsideOutlines(line, [square])[0]).toBe(line);
+    expect(outsideOutlines(line, [])[0]).toBe(line);
+  });
+
+  it("go altogether when they're all inside", () => {
+    const inside = [
+      { x: 10, y: 10 },
+      { x: 90, y: 90 },
+    ];
+    expect(outsideOutlines(inside, [square])).toEqual([]);
+  });
+
+  it("are cut by every outline they cross", () => {
+    const further = square.map(({ x, y }) => ({ x: x + 200, y }));
+    const long = [
+      { x: -50, y: 50 },
+      { x: 400, y: 50 },
+    ];
+    expect(outsideOutlines(long, [square, further])).toHaveLength(3);
   });
 });

@@ -6,7 +6,7 @@ import { fitsLimits } from "../levels/level";
 import { Budget } from "../world/budget";
 import { emptyLayout } from "../world/layout";
 import { Playground } from "../world/playground";
-import { RockTool, SpikesTool } from "./terrain";
+import { NoDrawTool, RockTool, SpikesTool } from "./terrain";
 import type { Tool, ToolContext } from "./tool";
 
 function setUp() {
@@ -53,6 +53,20 @@ describe("the spikes tool", () => {
     expect(tool.editorOnly).toBe(true);
     budget.limits = { ...budget.limits, terrain: 0 };
     expect(tool.down({ x: 0, y: 0 })).toBe("none");
+  });
+});
+
+describe("the no-drawing tool", () => {
+  it("marks out what's drawn round, or a round area with a tap", () => {
+    const { playground, ctx } = setUp();
+    const tool = new NoDrawTool(ctx);
+    drag(tool, circle(200, 200, 60));
+    tool.down({ x: 500, y: 500 });
+    tool.up();
+    expect(playground.noDraw.covers({ x: 200, y: 200 })).toBe(true);
+    expect(playground.noDraw.covers({ x: 500, y: 560 })).toBe(true);
+    expect(playground.noDraw.covers({ x: 350, y: 350 })).toBe(false);
+    expect(tool.editorOnly).toBe(true);
   });
 });
 

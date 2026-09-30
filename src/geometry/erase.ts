@@ -76,7 +76,12 @@ export function erasePolyline(
     }
   }
   if (current.length > 0) pieces.push(current);
+  return tidyPieces(pieces);
+}
 
+// The pieces left of a cut-up line, without points on top of each other or
+// scraps too short to keep.
+export function tidyPieces(pieces: Point[][]): Point[][] {
   return pieces
     .map(tidy)
     .filter(

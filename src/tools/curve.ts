@@ -124,14 +124,16 @@ export class CurveTool implements Tool {
     const snap = hover && this.ctx.findSnap(hover, this.start?.line);
     if (snap) snapTargets.push(snap.point);
 
-    let preview: Point[] | null = null;
+    let preview: Point[][] | null = null;
     if (this.points) {
       // Preview the curve running on to where the pointer is.
       const points =
         hover && !this.isNearLastPoint(hover)
           ? [...this.points, hover]
           : this.points;
-      preview = catmullRom(points, LINE_SPACING_PX);
+      preview = this.ctx.playground.noDraw.outside(
+        catmullRom(points, LINE_SPACING_PX),
+      );
     }
     return {
       preview,

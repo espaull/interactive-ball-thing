@@ -57,8 +57,14 @@ export class BoostTool implements Tool {
   }
 
   up(): void {
-    // Smoothed like a drawn line, so the push direction changes smoothly too.
-    if (this.stroke) this.ctx.playground.boosts.add(smoothStroke(this.stroke));
+    // Smoothed like a drawn line, so the push direction changes smoothly
+    // too. Nothing can be painted in a no-drawing area.
+    if (this.stroke) {
+      const { boosts, noDraw } = this.ctx.playground;
+      for (const piece of noDraw.outside(smoothStroke(this.stroke))) {
+        boosts.add(piece);
+      }
+    }
     this.cancel();
   }
 
@@ -67,6 +73,10 @@ export class BoostTool implements Tool {
   }
 
   overlay(): Partial<Overlay> {
-    return { boostPreview: this.stroke && smoothStroke(this.stroke) };
+    return {
+      boostPreview:
+        this.stroke &&
+        this.ctx.playground.noDraw.outside(smoothStroke(this.stroke)),
+    };
   }
 }

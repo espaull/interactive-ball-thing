@@ -43,7 +43,13 @@ export class CannonTool implements Tool {
   down(p: Point): DownResult {
     const { cannons } = this.ctx.playground;
     const found = cannons.at(p.x, p.y);
-    if (!found && this.ctx.budget.left("cannons") < 1) return "none";
+    if (
+      !found &&
+      (this.ctx.budget.left("cannons") < 1 ||
+        this.ctx.playground.noDraw.covers(p))
+    ) {
+      return "none";
+    }
     this.existing = found !== null;
     this.aiming = found ?? cannons.add(p.x, p.y, DEFAULT_ANGLE, DEFAULT_POWER);
     this.dragged = false;

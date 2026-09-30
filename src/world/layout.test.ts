@@ -24,6 +24,11 @@ function designed(): Playground {
     { x: 800, y: 700 },
     { x: 900, y: 690 },
   ]);
+  pg.noDraw.add([
+    { x: 0, y: 0 },
+    { x: 50, y: 0 },
+    { x: 50, y: 50 },
+  ]);
   pg.addBall(200, 200);
   pg.addBubble(250, 250);
   return pg;
@@ -98,5 +103,6 @@ describe("layouts", () => {
     // Saved before there was terrain.
     expect(layout.rocks).toEqual([]);
     expect(layout.spikes).toEqual([]);
+    expect(layout.noDraw).toEqual([]);
   });
 });

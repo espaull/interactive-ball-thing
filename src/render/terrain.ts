@@ -1,6 +1,7 @@
 // Drawing the terrain a level's made of.
 import { boundsOf, distance, lerp, type Point } from "../geometry/point";
 import {
+  NO_DRAW_COLOR,
   ROCK_BOTTOM,
   ROCK_EDGE,
   ROCK_TOP,
@@ -13,6 +14,8 @@ import { SPIKE_REACH_PX } from "../world/spikes";
 // little past where they pop things, so touching them looks fair.
 const SPIKE_SPACING_PX = 10;
 const SPIKE_HEIGHT_PX = SPIKE_REACH_PX + 3;
+// The stripes across a no-drawing area, this far apart (pixels).
+const STRIPE_SPACING_PX = 14;
 
 function tracePath(
   ctx: CanvasRenderingContext2D,
@@ -104,6 +107,44 @@ export function drawSpikes(
   tracePath(ctx, points, false);
   ctx.lineWidth = 5;
   ctx.lineCap = "round";
+  ctx.stroke();
+  ctx.restore();
+}
+
+// A no-drawing area: red stripes inside a dashed edge, like a road
+// closed off. The stripes line up across the world, so areas side by side
+// look like one.
+export function drawNoDraw(
+  ctx: CanvasRenderingContext2D,
+  outline: Point[],
+  alpha = 1,
+): void {
+  const { left, top, right, bottom } = boundsOf(outline);
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  tracePath(ctx, outline, true);
+  ctx.fillStyle = `${NO_DRAW_COLOR}14`;
+  ctx.fill();
+
+  ctx.save();
+  ctx.clip();
+  ctx.beginPath();
+  // Stripes along x + y = k × spacing.
+  const s = STRIPE_SPACING_PX;
+  for (let k = Math.floor((left + top) / s); k * s <= right + bottom; k++) {
+    ctx.moveTo(k * s - top, top);
+    ctx.lineTo(k * s - bottom, bottom);
+  }
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = `${NO_DRAW_COLOR}33`;
+  ctx.stroke();
+  ctx.restore();
+
+  tracePath(ctx, outline, true);
+  ctx.setLineDash([10, 7]);
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = `${NO_DRAW_COLOR}b3`;
   ctx.stroke();
   ctx.restore();
 }

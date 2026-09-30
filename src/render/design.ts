@@ -5,7 +5,7 @@ import { drawBoostStrip } from "./boost";
 import { drawCannon } from "./cannon";
 import { drawCup } from "./cup";
 import { drawPortal } from "./portal";
-import { drawRock, drawSpikes } from "./terrain";
+import { drawNoDraw, drawRock, drawSpikes } from "./terrain";
 
 // How thick the drawn lines are, in world pixels.
 export const LINE_WIDTH_PX = 4;
@@ -22,16 +22,17 @@ export function drawPolyline(
 }
 
 // The playground's design (everything but the balls and bubbles), from the
-// bottom up: rocks, then boost strips under the lines so the track stays
-// clear on top, then spikes, cups, portals and cannons. Used for the screen
-// and for the gallery's pictures, which draw their lines thicker when zoomed
-// right out.
+// bottom up: no-drawing areas, rocks, then boost strips under the lines so
+// the track stays clear on top, then spikes, cups, portals and cannons. Used
+// for the screen and for the gallery's pictures, which draw their lines
+// thicker when zoomed right out.
 export function drawDesign(
   ctx: CanvasRenderingContext2D,
   playground: Playground,
   time: number,
   lineWidth = LINE_WIDTH_PX,
 ): void {
+  for (const zone of playground.noDraw.all) drawNoDraw(ctx, zone.outline);
   for (const rock of playground.rocks.all) drawRock(ctx, rock.outline);
 
   for (const boost of playground.boosts.all) {

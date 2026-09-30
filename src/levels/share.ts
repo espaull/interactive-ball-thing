@@ -88,6 +88,7 @@ function rounded(layout: Layout): Layout {
     boosts: layout.boosts.map(round),
     spikes: layout.spikes.map(round),
     rocks: outlines(layout.rocks),
+    noDraw: outlines(layout.noDraw),
   };
 }
 

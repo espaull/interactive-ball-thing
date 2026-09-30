@@ -8,6 +8,7 @@ import { Crossings } from "./crossings";
 import { Cups, type Cup } from "./cups";
 import type { Layout } from "./layout";
 import { Lines } from "./lines";
+import { NoDrawZones } from "./no-draw";
 import type { Grabbed, Part } from "./part";
 import { Portals, type Teleport } from "./portals";
 import { Rocks } from "./rocks";
@@ -20,6 +21,7 @@ export { Bubble } from "./bubbles";
 export type { Cannon } from "./cannons";
 export { Cup } from "./cups";
 export type { Line, LineEnd } from "./lines";
+export type { NoDrawZone } from "./no-draw";
 export type { Grabbed } from "./part";
 export type { PortalEnd, PortalPair, Teleport } from "./portals";
 export type { Rock } from "./rocks";
@@ -103,9 +105,9 @@ function findAt<T extends Thing>(
 }
 
 // Everything in the world: the physics simulation, the design (lines, boost
-// strips, portals, cups and cannons, and the terrain: rocks and spikes,
-// each kept by its own part), and the balls and bubbles. Positions in and
-// out are in pixels.
+// strips, portals, cups and cannons, and the terrain: rocks, spikes and
+// no-drawing areas, each kept by its own part), and the balls and bubbles.
+// Positions in and out are in pixels.
 export class Playground {
   // y grows downwards, matching screen coordinates.
   readonly world = new World({ gravity: { x: 0, y: 10 } });
@@ -136,6 +138,7 @@ export class Playground {
   readonly cannons = new Cannons(() => this.time, this.changed);
   readonly rocks = new Rocks(this.world, this.changed);
   readonly spikes = new Spikes(this.world, this.changed);
+  readonly noDraw = new NoDrawZones(this.changed);
   // From the top down, as they're drawn, so what's picked up is what's on
   // top.
   private readonly parts: Part<unknown>[] = [
@@ -146,6 +149,7 @@ export class Playground {
     this.boosts,
     this.lines,
     this.rocks,
+    this.noDraw,
   ];
 
   // Lets balls pass through the places where a line crosses itself.
@@ -223,10 +227,24 @@ export class Playground {
 
   // Pick up whatever's on top at a point to move it (a cannon, portal or
   // cup), if anything. A cannon holds its fire until it's put down.
+  // Nothing can be moved into a no-drawing area: it waits outside.
   grabAt(x: number, y: number): Grabbed | null {
     for (const part of this.parts) {
       const grabbed = part.grabAt?.(x, y);
-      if (grabbed) return grabbed;
+      if (!grabbed) continue;
+      const { noDraw } = this;
+      return {
+        get x() {
+          return grabbed.x;
+        },
+        get y() {
+          return grabbed.y;
+        },
+        moveTo(x, y) {
+          if (!noDraw.covers({ x, y })) grabbed.moveTo(x, y);
+        },
+        drop: () => grabbed.drop(),
+      };
     }
     return null;
   }
@@ -261,6 +279,7 @@ export class Playground {
       cannons: this.cannons.save(),
       rocks: this.rocks.save(),
       spikes: this.spikes.save(),
+      noDraw: this.noDraw.save(),
     };
   }
 
@@ -275,6 +294,7 @@ export class Playground {
       cannons: this.cannons.save(true),
       rocks: this.rocks.save(true),
       spikes: this.spikes.save(true),
+      noDraw: this.noDraw.save(true),
     };
   }
 
@@ -295,6 +315,7 @@ export class Playground {
     this.cannons.load(layout.cannons);
     this.rocks.load(layout.rocks);
     this.spikes.load(layout.spikes);
+    this.noDraw.load(layout.noDraw);
   }
 
   // Replace the fixed things (a level's pieces) with these. An empty layout
@@ -307,6 +328,7 @@ export class Playground {
     this.cannons.load(layout.cannons, true);
     this.rocks.load(layout.rocks, true);
     this.spikes.load(layout.spikes, true);
+    this.noDraw.load(layout.noDraw, true);
   }
 
   // Fire every cannon whose next shot is due.

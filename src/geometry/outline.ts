@@ -1,5 +1,6 @@
 // Closed outlines: shapes drawn round with a finger (rocks and no-drawing
 // areas). An outline's last point joins back to its first.
+import { tidyPieces } from "./erase";
 import {
   boundsOf,
   distance,
@@ -86,4 +87,58 @@ export function roundShape(
       bump,
     );
   });
+}
+
+// Where segment p→q crosses segment a→b, as a fraction (0..1) along p→q,
+// or null if it doesn't.
+function crossing(p: Point, q: Point, a: Point, b: Point): number | null {
+  const dx = q.x - p.x;
+  const dy = q.y - p.y;
+  const ex = b.x - a.x;
+  const ey = b.y - a.y;
+  const denominator = dx * ey - dy * ex;
+  if (denominator === 0) return null;
+  const t = ((a.x - p.x) * ey - (a.y - p.y) * ex) / denominator;
+  const u = ((a.x - p.x) * dy - (a.y - p.y) * dx) / denominator;
+  return t > 0 && t < 1 && u >= 0 && u <= 1 ? t : null;
+}
+
+// The pieces of a line outside all the outlines, cut exactly at their
+// edges. The line itself (the same list) if it doesn't go in any.
+export function outsideOutlines(
+  points: Point[],
+  outlines: Point[][],
+): Point[][] {
+  const inAny = (p: Point) => outlines.some((o) => isInside(p, o));
+  const pieces: Point[][] = [];
+  let current: Point[] = [];
+  let cut = false;
+  for (let i = 0; i < points.length - 1; i++) {
+    const p = points[i];
+    const q = points[i + 1];
+    // Split the segment where it crosses an edge, then keep each part
+    // whose middle is outside (as erasing does).
+    const cuts = [0, 1];
+    for (const outline of outlines) {
+      for (let k = 0, j = outline.length - 1; k < outline.length; j = k++) {
+        const t = crossing(p, q, outline[j], outline[k]);
+        if (t !== null) cuts.push(t);
+      }
+    }
+    cuts.sort((a, b) => a - b);
+    for (let k = 0; k < cuts.length - 1; k++) {
+      if (cuts[k + 1] === cuts[k]) continue;
+      if (!inAny(lerp(p, q, (cuts[k] + cuts[k + 1]) / 2))) {
+        if (current.length === 0) current.push(lerp(p, q, cuts[k]));
+        current.push(lerp(p, q, cuts[k + 1]));
+      } else {
+        cut = true;
+        if (current.length > 0) pieces.push(current);
+        current = [];
+      }
+    }
+  }
+  if (!cut) return [points];
+  if (current.length > 0) pieces.push(current);
+  return tidyPieces(pieces);
 }

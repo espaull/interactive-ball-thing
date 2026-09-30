@@ -5,8 +5,9 @@ import type { Point } from "../geometry/point";
 
 // Everything drawn on top of the world to show what the tools are doing.
 export interface Overlay {
-  // The line being drawn, in grey.
-  preview: Point[] | null;
+  // The line being drawn, in grey: in pieces, where it's cut by no-drawing
+  // areas.
+  preview: Point[][] | null;
   // Points placed with the Curve tool.
   curveHandles: Point[] | null;
   // Ends of existing lines that a new line can join onto.
@@ -15,14 +16,18 @@ export interface Overlay {
   snapTargets: Point[];
   // The eraser's circle, in world pixels.
   eraser: { x: number; y: number; radius: number } | null;
-  // The boost strip being painted.
-  boostPreview: Point[] | null;
+  // The boost strip being painted (in pieces, like a line).
+  boostPreview: Point[][] | null;
   // The first portal of a pair, waiting for its partner.
   portalPending: { end: PortalEnd; color: string } | null;
   // Where a cannon being aimed will send its balls.
   trajectory: Point[] | null;
-  // Terrain being drawn: a rock's outline so far, or spikes being painted.
-  terrainPreview: { kind: "rock" | "spikes"; points: Point[] } | null;
+  // Terrain being drawn: the outline so far of a rock or no-drawing area,
+  // or spikes being painted.
+  terrainPreview: {
+    kind: "rock" | "spikes" | "noDraw";
+    points: Point[];
+  } | null;
 }
 
 // What the tools share.

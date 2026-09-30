@@ -19,8 +19,9 @@ export class CupTool implements Tool {
   constructor(private ctx: ToolContext) {}
 
   down(p: Point): DownResult {
-    if (this.ctx.budget.left("cups") < 1) return "none";
-    this.ctx.playground.cups.add(p.x, p.y);
+    const { playground, budget } = this.ctx;
+    if (budget.left("cups") < 1 || playground.noDraw.covers(p)) return "none";
+    playground.cups.add(p.x, p.y);
     return "none";
   }
 }

@@ -65,6 +65,9 @@ export class PortalTool implements Tool {
       this.aim(this.first, "pending", p);
     } else if (placed) {
       this.aim(placed, "placed", p);
+    } else if (playground.noDraw.covers(p)) {
+      // Nothing can be put in a no-drawing area.
+      return "none";
     } else if (!this.first) {
       if (this.ctx.budget.left("portals") < 1) {
         return "none";

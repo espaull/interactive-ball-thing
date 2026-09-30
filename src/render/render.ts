@@ -13,7 +13,7 @@ import { drawHeart } from "./heart";
 import type { Point } from "../geometry/point";
 import { drawPortal } from "./portal";
 import { drawSledge } from "./sledge";
-import { drawRock, drawSpikes } from "./terrain";
+import { drawNoDraw, drawRock, drawSpikes } from "./terrain";
 
 // A level's hearts still to collect, and (in the editor) where its rider
 // starts, drawn as a ghost.
@@ -80,15 +80,18 @@ export function render(
   if (terrainPreview) {
     const { kind, points } = terrainPreview;
     if (kind === "rock") drawRock(ctx, points, 0.6);
-    else drawSpikes(ctx, points, 0.6);
+    else if (kind === "spikes") drawSpikes(ctx, points, 0.6);
+    else drawNoDraw(ctx, points, 0.6);
   }
 
-  if (boostPreview) drawBoostStrip(ctx, boostPreview, time, 0.6);
+  for (const piece of boostPreview ?? []) {
+    drawBoostStrip(ctx, piece, time, 0.6);
+  }
 
   if (preview) {
     ctx.lineWidth = LINE_WIDTH_PX;
     ctx.strokeStyle = PREVIEW_COLOR;
-    drawPolyline(ctx, preview);
+    for (const piece of preview) drawPolyline(ctx, piece);
   }
 
   // Rings on line ends show where a new line can carry on from; the one that

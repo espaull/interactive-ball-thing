@@ -85,7 +85,9 @@ export class PencilTool implements Tool {
       if (start) snapTargets.push(start.point);
     }
     return {
-      preview: this.stroke && smoothStroke(this.stroke),
+      preview:
+        this.stroke &&
+        this.ctx.playground.noDraw.outside(smoothStroke(this.stroke)),
       lineEnds: lineEnds(this.ctx.playground),
       snapTargets,
     };
