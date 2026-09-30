@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Point } from "../geometry/point";
 import { Budget } from "../world/budget";
+import { emptyLayout } from "../world/layout";
 import { Playground } from "../world/playground";
 import type { Level } from "./level";
 import { LevelPlay } from "./play";
@@ -22,6 +23,7 @@ function dropLevel(): Level {
       { x: 600, y: 250 },
     ],
     pieces: {
+      ...emptyLayout(),
       lines: [
         [
           { x: 0, y: 500 },
@@ -30,6 +32,7 @@ function dropLevel(): Level {
       ],
     },
     limits: { ink: 300 },
+    solution: null,
   };
 }
 
@@ -85,7 +88,7 @@ describe("playing a level", () => {
     const level = dropLevel();
     // Nowhere to land but the edge of the world.
     level.goal = { x: 2000, y: 400 };
-    level.pieces = {};
+    level.pieces = emptyLayout();
     const { playground, play, events } = setUp(level);
     playground.lines.add([
       { x: 0, y: 50 },
@@ -129,7 +132,7 @@ describe("playing a level", () => {
     for (let x = 0; x <= 400; x += 8) {
       valley.push({ x, y: 300 + 200 * Math.sin((x / 400) * Math.PI) });
     }
-    level.pieces = { lines: [valley] };
+    level.pieces = { ...emptyLayout(), lines: [valley] };
     level.start = { x: 60, y: 360 };
     const { playground, play, events } = setUp(level);
     play.go();

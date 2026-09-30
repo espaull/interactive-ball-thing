@@ -52,13 +52,14 @@ Live site: https://espaull.github.io/interactive-ball-thing/ — every push to
 - `src/render/` — drawing; `design.ts` draws the design for the screen and
   the gallery's pictures (which are fitted using each part's `extent`).
   `src/palette.ts` holds the colours.
-- `src/levels/` — `level.ts` (what a level is), `levels.ts` (the levels, in
-  order), `play.ts` (`LevelPlay`: fixes a level's pieces, sets the budget,
-  keeps the rider waiting paused until Go, collects hearts, wins at the
-  goal cup, resets a lost or stuck rider). `solutions.ts` is only for
-  `levels.test.ts`, which proves every level can be won with every heart
-  within its limits. **A new or changed level needs its solution updated
-  and that test passing.**
+- `src/levels/` — the levels are data: one JSON file each in `data/`, in
+  the order `data/order.json` lists, read by `parseLevel` (`level.ts`) and
+  loaded by `levels.ts`. Each file keeps a `solution`: pieces that win
+  with every heart, which `levels.test.ts` replays to prove every level can
+  still be finished within its limits. `play.ts` (`LevelPlay`) fixes a
+  level's pieces, sets the budget, keeps the rider waiting paused until
+  Go, collects hearts, wins at the goal cup, and resets a lost or stuck
+  rider.
 - `src/ui/` — the HTML controls: `toolbar` (tool buttons, menus, hint,
   supply meters), `actions` (Pause, Follow, Home, Undo, Clear),
   `background`, `gallery`, `levels` (front screen, level map, win panel,

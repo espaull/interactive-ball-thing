@@ -3,7 +3,7 @@ import { Budget } from "../world/budget";
 import { Playground } from "../world/playground";
 import { LEVELS } from "./levels";
 import { LevelPlay } from "./play";
-import { applySolution, SOLUTIONS } from "./solutions";
+import { isLevelId, MAX_HEARTS, parseLevel } from "./level";
 
 const STEP = 1 / 60;
 
@@ -18,7 +18,7 @@ function play(levelIndex: number, solved: boolean) {
   play.onWin = (hearts) => (result = { won: true, hearts });
   play.onLost = () => (result ??= { won: false, hearts: 0 });
   play.start(level);
-  if (solved) applySolution(playground, SOLUTIONS[level.id]);
+  if (solved && level.solution) playground.loadLayout(level.solution);
   const left = {
     ink: budget.left("ink"),
     boost: budget.left("boost"),
@@ -34,11 +34,20 @@ function play(levelIndex: number, solved: boolean) {
 }
 
 describe("the levels", () => {
-  it("each have their own id and at most three hearts", () => {
-    const ids = new Set(LEVELS.map((level) => level.id));
-    expect(ids.size).toBe(LEVELS.length);
+  it("are all there, in order, each with its own id", () => {
+    const files = import.meta.glob<unknown>("./data/*.json", {
+      eager: true,
+      import: "default",
+    });
+    const order = files["./data/order.json"] as string[];
+    expect(LEVELS.map((level) => level.id)).toEqual(order);
+    // Every other file is a level in the order (none failed to read).
+    expect(Object.keys(files)).toHaveLength(order.length + 1);
+    expect(new Set(order).size).toBe(order.length);
     for (const level of LEVELS) {
-      expect(level.hearts.length).toBeLessThanOrEqual(3);
+      expect(isLevelId(level.id)).toBe(true);
+      expect(level.hearts.length).toBeLessThanOrEqual(MAX_HEARTS);
+      expect(level.solution).not.toBeNull();
     }
   });
 
@@ -58,5 +67,36 @@ describe("the levels", () => {
         expect(play(i, false).result).toMatchObject({ won: false });
       });
     });
+  });
+});
+
+describe("reading a level file", () => {
+  const good = {
+    id: "a-level",
+    name: "A level",
+    tip: "Tip",
+    rider: "sledge",
+    start: { x: 1, y: 2 },
+    goal: { x: 3, y: 4 },
+    hearts: [{ x: 5, y: 6 }],
+    limits: { ink: 100, portals: 0, cannons: 5 },
+    pieces: { version: 1, lines: [] },
+    solution: null,
+  };
+
+  it("reads a good one, keeping just the limits a level can set", () => {
+    const level = parseLevel(good)!;
+    expect(level.rider).toBe("sledge");
+    expect(level.limits).toEqual({ ink: 100 });
+    expect(level.pieces.cups).toEqual([]);
+    expect(level.solution).toBeNull();
+  });
+
+  it("turns down one without an id, a start, a goal or pieces", () => {
+    expect(parseLevel({ ...good, id: "Not a file name" })).toBeNull();
+    expect(parseLevel({ ...good, start: null })).toBeNull();
+    expect(parseLevel({ ...good, goal: "here" })).toBeNull();
+    expect(parseLevel({ ...good, pieces: { version: 2 } })).toBeNull();
+    expect(parseLevel("level")).toBeNull();
   });
 });

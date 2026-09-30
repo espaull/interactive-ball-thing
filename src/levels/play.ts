@@ -91,11 +91,7 @@ export class LevelPlay {
     this.current = level;
     playground.clear();
     const { pieces, goal } = level;
-    playground.fix({
-      ...emptyLayout(),
-      ...pieces,
-      cups: [...(pieces.cups ?? []), goal],
-    });
+    playground.fix({ ...pieces, cups: [...pieces.cups, goal] });
     this.goal =
       playground.cups.all.find(
         (cup) => cup.fixed && cup.x === goal.x && cup.y === goal.y,
