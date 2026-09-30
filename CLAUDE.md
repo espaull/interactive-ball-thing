@@ -23,8 +23,9 @@ Live site: https://espaull.github.io/interactive-ball-thing/ — every push to
 
 Anyone can make levels: Levels → My levels → ➕ Make a level opens the
 editor (`ui/editor.ts`, made for tablets). Draw the level with the normal
-tools, place its start, goal and hearts with the Start/Goal/Heart tools,
-and set its name, rider and what the player gets in the panel. **Try it**
+tools and its **terrain** (Rock, Spikes and No drawing, `tools/terrain.ts`),
+place its start, goal and hearts with the Start/Goal/Heart tools, and set
+its name, rider and what the player gets in the panel. **Try it**
 plays it for real; winning with every heart (having placed something)
 records that win's pieces as its solution, and only then can it be
 saved. 🎯 Limit to what I used sets the limits to the win's (changing
@@ -55,7 +56,9 @@ file and take it out of `order.json`.
   works on them), bubbles and stepping (which does nothing while `paused`: every
   timer runs on the playground's own time, so everything waits). The
   design is made of **parts** (`part.ts`): `lines`, `boosts`, `portals`,
-  `cups`, `cannons`, each a module that keeps
+  `cups`, `cannons`, and the terrain: `rocks` (solid outlines), `spikes`
+  (strips that pop what touches them) and `noDraw` (areas nothing can be
+  built in), each a module that keeps
   its own things and erases, picks up, saves and loads them
   (`playground.cups.add(…)`, `playground.cannons.aim(…)`). Their fields are
   read-only outside the part: every change goes through it, which bumps
@@ -69,7 +72,9 @@ file and take it out of `order.json`.
   behaviour on top of Planck. `budget.ts` holds a level's limits (ink and
   boost in pixels, portals etc. counted) and what's left of each; each
   tool names the `supply` it uses, and the toolbar only offers tools the
-  budget allows.
+  budget allows. The terrain tools use `terrain`, which levels never give
+  the player, and are `editorOnly` for now: to offer them in free play,
+  take `editorOnly` out.
   **Planck works in metres; only code in `world/` may touch Planck bodies
   or `PX_PER_M`.** Everything else uses pixels (`ball.position`).
 - `src/tools/` — one class per toolbar tool, implementing `Tool` (`tool.ts`).
@@ -159,7 +164,13 @@ file and take it out of `order.json`.
 - Bubbles pop on their 3rd bump; bumps are counted once per physics step,
   because a line is many segments and contacts flicker between them.
 - Planck reuses contact objects, so any set of contacts must be cleaned up
-  in `end-contact`.
+  in `end-contact`. (Spikes avoid keeping any: they read their body's
+  contact list after each step.)
+- **No-drawing areas** only stop what's placed after them (lines and boosts
+  are cut at their edge in `commitLine` and the Boost tool; the Portal,
+  Cup and Cannon tools and `Playground.grabAt` check `noDraw.covers`), so a
+  level maker can draw track through one by drawing the track first. A new
+  tool that places things should check them too.
 - **The toolbar sizes itself:** `ui/toolbar.ts` measures it and adds the
   `toolbar-compact`, `-tight` and `-rows` classes (in `style.css`) until it
   fits with 16px either side. Don't add screen-width breakpoints for it; a
