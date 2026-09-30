@@ -10,6 +10,7 @@ import type { Layout } from "./layout";
 import { Lines } from "./lines";
 import type { Grabbed, Part } from "./part";
 import { Portals, type Teleport } from "./portals";
+import { Rocks } from "./rocks";
 import { Signal } from "../signal";
 import { PX_PER_M, toMetres, toPixels } from "./units";
 
@@ -20,6 +21,7 @@ export { Cup } from "./cups";
 export type { Line, LineEnd } from "./lines";
 export type { Grabbed } from "./part";
 export type { PortalEnd, PortalPair, Teleport } from "./portals";
+export type { Rock } from "./rocks";
 
 const BALL_RADIUS_M = 0.4;
 // A sledge is a flat block 48px long and 12px tall (the runners and the
@@ -99,8 +101,9 @@ function findAt<T extends Thing>(
 }
 
 // Everything in the world: the physics simulation, the design (lines, boost
-// strips, portals, cups and cannons, each kept by its own part), and the
-// balls and bubbles. Positions in and out are in pixels.
+// strips, portals, cups and cannons, and the terrain: rocks, each kept by
+// its own part), and the balls and bubbles. Positions in and out are in
+// pixels.
 export class Playground {
   // y grows downwards, matching screen coordinates.
   readonly world = new World({ gravity: { x: 0, y: 10 } });
@@ -129,6 +132,7 @@ export class Playground {
   readonly portals = new Portals(this.changed);
   readonly cups = new Cups(this.world, this.changed);
   readonly cannons = new Cannons(() => this.time, this.changed);
+  readonly rocks = new Rocks(this.world, this.changed);
   // From the top down, as they're drawn, so what's picked up is what's on
   // top.
   private readonly parts: Part<unknown>[] = [
@@ -137,6 +141,7 @@ export class Playground {
     this.cups,
     this.boosts,
     this.lines,
+    this.rocks,
   ];
 
   // Lets balls pass through the places where a line crosses itself.
@@ -247,6 +252,7 @@ export class Playground {
       portals: this.portals.save(),
       cups: this.cups.save(),
       cannons: this.cannons.save(),
+      rocks: this.rocks.save(),
     };
   }
 
@@ -259,6 +265,7 @@ export class Playground {
       portals: this.portals.save(true),
       cups: this.cups.save(true),
       cannons: this.cannons.save(true),
+      rocks: this.rocks.save(true),
     };
   }
 
@@ -277,6 +284,7 @@ export class Playground {
     this.portals.load(layout.portals);
     this.cups.load(layout.cups);
     this.cannons.load(layout.cannons);
+    this.rocks.load(layout.rocks);
   }
 
   // Replace the fixed things (a level's pieces) with these. An empty layout
@@ -287,6 +295,7 @@ export class Playground {
     this.portals.load(layout.portals, true);
     this.cups.load(layout.cups, true);
     this.cannons.load(layout.cannons, true);
+    this.rocks.load(layout.rocks, true);
   }
 
   // Fire every cannon whose next shot is due.

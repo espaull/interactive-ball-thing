@@ -62,6 +62,32 @@ describe("sharing a level", () => {
     });
   });
 
+  it("keeps a rock whole when its points are rounded", async () => {
+    const rocky = level();
+    rocky.pieces.rocks = [
+      [
+        { x: 0.2, y: 0 },
+        { x: 100, y: 0 },
+        { x: 50, y: 80 },
+        { x: 0.4, y: 0.3 },
+      ],
+      // Rounds down to a line, which isn't a rock.
+      [
+        { x: 0, y: 0 },
+        { x: 0.1, y: 0.1 },
+        { x: 9, y: 0 },
+      ],
+    ];
+    const back = await decodeLevel(await encodeLevel(rocky));
+    expect(back?.pieces.rocks).toEqual([
+      [
+        { x: 0, y: 0 },
+        { x: 100, y: 0 },
+        { x: 50, y: 80 },
+      ],
+    ]);
+  });
+
   it("makes links short enough to send, for every built-in level", async () => {
     for (const l of LEVELS) {
       const code = await encodeLevel(l);

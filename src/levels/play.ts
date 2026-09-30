@@ -103,6 +103,7 @@ export class LevelPlay {
       cups: 0,
       cannons: 0,
       drops: 0,
+      terrain: 0,
     };
     this.budget.limits = { ...none, ...level.limits };
     this.color = randomBallColor();

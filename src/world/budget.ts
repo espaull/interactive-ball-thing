@@ -15,6 +15,9 @@ export interface Limits {
   // Tapping to drop balls, sledges and bubbles (which aren't counted: it's
   // allowed or not).
   drops: number;
+  // Pieces of terrain (rocks), counted. Levels never give the player any,
+  // as it's what levels are made of.
+  terrain: number;
 }
 
 export type Supply = keyof Limits;
@@ -26,6 +29,7 @@ export const NO_LIMITS: Limits = {
   cups: Infinity,
   cannons: Infinity,
   drops: Infinity,
+  terrain: Infinity,
 };
 
 // Supplies measured by length (shown as a meter), rather than counted.
@@ -58,7 +62,7 @@ export class Budget {
   }
 
   private used(supply: Supply): number {
-    const { lines, boosts, portals, cups, cannons } = this.playground;
+    const { lines, boosts, portals, cups, cannons, rocks } = this.playground;
     const own = <T extends { fixed: boolean }>(things: readonly T[]) =>
       things.filter((thing) => !thing.fixed);
     switch (supply) {
@@ -74,6 +78,8 @@ export class Budget {
         return own(cannons.all).length;
       case "drops":
         return 0;
+      case "terrain":
+        return own(rocks.all).length;
     }
   }
 }

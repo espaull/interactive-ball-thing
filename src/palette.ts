@@ -59,3 +59,8 @@ export const HEART_BURST_COLORS = ["#f43f5e", "#ec4899", "#fb7185", "#f472b6"];
 // Cannons: a dark slate barrel on a wooden wheel.
 export const CANNON_COLOR = "#334155";
 export const CANNON_WHEEL = "#92400e";
+
+// Rocks: grey stone, lighter on top, with a darker edge.
+export const ROCK_TOP = "#b8b2ac";
+export const ROCK_BOTTOM = "#78716c";
+export const ROCK_EDGE = "#57534e";

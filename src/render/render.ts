@@ -13,6 +13,7 @@ import { drawHeart } from "./heart";
 import type { Point } from "../geometry/point";
 import { drawPortal } from "./portal";
 import { drawSledge } from "./sledge";
+import { drawRock } from "./terrain";
 
 // A level's hearts still to collect, and (in the editor) where its rider
 // starts, drawn as a ghost.
@@ -63,6 +64,7 @@ export function render(
     boostPreview,
     portalPending,
     trajectory,
+    terrainPreview,
   } = overlay;
   const time = performance.now() / 1000;
   ctx.save();
@@ -74,6 +76,8 @@ export function render(
   // The design, with what the tools are doing drawn on top of it. Balls and
   // bubbles go over everything, so balls look like they drop into portals.
   drawDesign(ctx, playground, time);
+
+  if (terrainPreview) drawRock(ctx, terrainPreview.points, 0.6);
 
   if (boostPreview) drawBoostStrip(ctx, boostPreview, time, 0.6);
 

@@ -3,6 +3,7 @@ import { parseCannons, type SavedCannons } from "./cannons";
 import { parseCups, type SavedCups } from "./cups";
 import { parseLines, type SavedLines } from "./lines";
 import { parsePortals, type SavedPortals } from "./portals";
+import { parseRocks, type SavedRocks } from "./rocks";
 import { isRecord } from "./saved";
 
 // Everything that makes up a playground's design, as plain data that can be
@@ -15,6 +16,7 @@ export interface Layout {
   portals: SavedPortals;
   cups: SavedCups;
   cannons: SavedCannons;
+  rocks: SavedRocks;
 }
 
 export function emptyLayout(): Layout {
@@ -25,6 +27,7 @@ export function emptyLayout(): Layout {
     portals: [],
     cups: [],
     cannons: [],
+    rocks: [],
   };
 }
 
@@ -41,5 +44,6 @@ export function parseLayout(data: unknown): Layout | null {
     portals: parsePortals(data.portals),
     cups: parseCups(data.cups),
     cannons: parseCannons(data.cannons),
+    rocks: parseRocks(data.rocks),
   };
 }

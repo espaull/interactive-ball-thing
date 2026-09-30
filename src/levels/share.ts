@@ -3,6 +3,7 @@
 // #level= in the address, which browsers never send to a server: levels go
 // straight from one person to another. Links come from anyone, so reading
 // one checks it every step of the way.
+import { tidyOutline } from "../geometry/outline";
 import type { Point } from "../geometry/point";
 import type { Layout } from "../world/layout";
 import { parseLevel, type Level } from "./level";
@@ -74,10 +75,18 @@ function rounded(layout: Layout): Layout {
       .filter(
         (p, i, all) => i === 0 || p.x !== all[i - 1].x || p.y !== all[i - 1].y,
       );
+  // Outlines join back up, so their last point can't land on the first
+  // either.
+  const outlines = (list: Point[][]) =>
+    list.flatMap((points) => {
+      const outline = tidyOutline(round(points));
+      return outline ? [outline] : [];
+    });
   return {
     ...layout,
     lines: layout.lines.map(round),
     boosts: layout.boosts.map(round),
+    rocks: outlines(layout.rocks),
   };
 }
 

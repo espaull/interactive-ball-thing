@@ -142,6 +142,7 @@ export class Input {
       boostPreview: null,
       portalPending: null,
       trajectory: null,
+      terrainPreview: null,
       ...this.tool.overlay?.(hover),
     };
   }

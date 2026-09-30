@@ -15,6 +15,11 @@ function designed(): Playground {
   pg.portals.add({ x: 300, y: 300 }, { x: 900, y: 300 }, "purple", null, 1);
   pg.cups.add(700, 600);
   pg.cannons.add(100, 100, -0.5, 0.75, false);
+  pg.rocks.add([
+    { x: 500, y: 500 },
+    { x: 600, y: 500 },
+    { x: 550, y: 420 },
+  ]);
   pg.addBall(200, 200);
   pg.addBubble(250, 250);
   return pg;
@@ -86,5 +91,7 @@ describe("layouts", () => {
     expect(layout.portals[0].b.aim).toBe(2);
     expect(layout.cups).toEqual([{ x: 5, y: 6 }]);
     expect(layout.cannons[0]).toMatchObject({ power: 1, active: true });
+    // Saved before there were rocks.
+    expect(layout.rocks).toEqual([]);
   });
 });

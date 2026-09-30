@@ -1,6 +1,7 @@
 // Helpers for saving parts of the design and reading them back. Saved data
 // comes from storage, so it's checked piece by piece: anything malformed is
 // skipped rather than losing the whole save.
+import { tidyOutline } from "../geometry/outline";
 import type { Point } from "../geometry/point";
 
 // Tenths of a pixel are plenty, and keep saves small.
@@ -40,4 +41,15 @@ export function parsePolylines(data: unknown): Point[][] {
     if (points.length >= 2) polylines.push(points);
   }
   return polylines;
+}
+
+// Saved outlines (rocks and no-drawing areas): each needs at least three
+// good points, not on top of each other.
+export function parseOutlines(data: unknown): Point[][] {
+  const outlines: Point[][] = [];
+  for (const item of list(data)) {
+    const outline = tidyOutline(list(item).filter(isPoint).map(roundPoint));
+    if (outline) outlines.push(outline);
+  }
+  return outlines;
 }
