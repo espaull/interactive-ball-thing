@@ -1,5 +1,5 @@
-// Guides for building a track around a moving ball: a trail showing where
-// it's just been, and (while paused) the path it's about to take. They
+// Guides for building a track around a moving ball, shown while paused: a
+// trail showing where it's just been, and the path it's about to take. They
 // follow one ball: the one the camera's following, or else the newest.
 import type { Camera } from "./camera";
 import { distance, type Point } from "./geometry/point";
@@ -77,6 +77,19 @@ export class Guides {
   }
 
   view(playground: Playground): GuideView {
+    const color = this.focus instanceof Ball ? this.focus.color : "#ffffff";
+    return {
+      trail: this.trail(playground),
+      color,
+      path: this.predict(playground),
+    };
+  }
+
+  // Where the ball has just been. It's recorded all the time, so it's there
+  // the moment you pause, but only shown while paused: while playing, you
+  // can watch the ball itself, and a trail behind it is distracting.
+  private trail(playground: Playground): TrailDot[][] {
+    if (!playground.paused) return [];
     const now = playground.now;
     const trail: TrailDot[][] = [];
     for (const mark of this.marks) {
@@ -87,8 +100,7 @@ export class Guides {
         age: (now - mark.time) / TRAIL_SECONDS,
       });
     }
-    const color = this.focus instanceof Ball ? this.focus.color : "#ffffff";
-    return { trail, color, path: this.predict(playground) };
+    return trail;
   }
 
   // Where the ball will go if play carries on. Only while paused (while

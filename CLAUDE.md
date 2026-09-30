@@ -49,9 +49,10 @@ Live site: https://espaull.github.io/interactive-ball-thing/ — every push to
   before running the fixed-step game loop. Keyboard shortcuts (plain keys
   like P, or with Ctrl/Cmd) go through `input.addShortcut`, so the tools
   never see them.
-- `src/guides.ts` — help for building around a moving ball: the trail
-  behind the followed (or newest) ball, recorded after each physics step,
-  and while paused the path it'll take (`world/prediction.ts` runs a hidden
+- `src/guides.ts` — help for building around a moving ball, shown while
+  paused: the trail behind the followed (or newest) ball (recorded after
+  each physics step all the time, so it's there when you pause), and the
+  path it'll take (`world/prediction.ts` runs a hidden
   copy of the playground with the design and that ball, worked out again
   only when the design or the ball changes).
 - `src/signal.ts` — `Signal`, for things several parts of the app listen to

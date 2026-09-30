@@ -24,11 +24,21 @@ function setUp() {
 }
 
 describe("the trail", () => {
+  it("shows only while paused, but is recorded all the time", () => {
+    const { playground, guides, run } = setUp();
+    playground.addBall(0, 100).body.setLinearVelocity({ x: 5, y: 0 });
+    run(1);
+    expect(guides.view(playground).trail).toEqual([]);
+    playground.setPaused(true);
+    expect(guides.view(playground).trail[0].length).toBeGreaterThan(50);
+  });
+
   it("follows the newest ball over the last 2 seconds, fading with age", () => {
     const { playground, guides, run } = setUp();
     const ball = playground.addBall(0, 100);
     ball.body.setLinearVelocity({ x: 5, y: 0 }); // 200px/s
     run(3);
+    playground.setPaused(true);
     const { trail, color } = guides.view(playground);
     expect(color).toBe(ball.color);
     expect(trail).toHaveLength(1);
@@ -56,9 +66,12 @@ describe("the trail", () => {
     const first = playground.addBall(0, 100);
     playground.addBall(0, 300);
     run(0.5);
+    playground.setPaused(true);
     expect(guides.view(playground).trail[0][0].y).toBeCloseTo(300);
+    playground.setPaused(false);
     camera.setFollowing(true, first);
     run(0.1);
+    playground.setPaused(true);
     const { trail, color } = guides.view(playground);
     expect(color).toBe(first.color);
     expect(trail[0].every((dot) => Math.abs(dot.y - 100) < 1)).toBe(true);
@@ -70,6 +83,7 @@ describe("the trail", () => {
     playground.portals.add({ x: 300, y: 100 }, { x: 300, y: 500 }, "purple");
     playground.addBall(100, 100).body.setLinearVelocity({ x: 5, y: 0 });
     run(1.5);
+    playground.setPaused(true);
     const { trail } = guides.view(playground);
     expect(trail).toHaveLength(2);
     expect(trail[1][0].y).toBeCloseTo(500, 0);
@@ -78,6 +92,7 @@ describe("the trail", () => {
   it("is empty with no balls", () => {
     const { playground, guides, run } = setUp();
     run(1);
+    playground.setPaused(true);
     expect(guides.view(playground).trail).toEqual([]);
   });
 });
