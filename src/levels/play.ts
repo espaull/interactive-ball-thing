@@ -15,6 +15,9 @@ const STUCK_SPEED = 15;
 const STUCK_SECONDS = 2;
 // Further than this (pixels) outside the level, the rider's lost.
 const LOST_MARGIN_PX = 400;
+// A run that goes on longer than this (seconds) without reaching the goal
+// is over too: the rider's rolling to and fro in a valley for ever.
+const MAX_RUN_SECONDS = 20;
 // A heart is collected when the rider's edge comes this close (pixels) to
 // its middle.
 export const HEART_REACH_PX = 14;
@@ -42,6 +45,7 @@ export class LevelPlay {
   // The area the level covers.
   private bounds: Box = { left: 0, top: 0, right: 0, bottom: 0 };
   private slowFor = 0;
+  private runTime = 0;
   // Whenever the level or the stage changes (for the Go button).
   readonly changed = new Signal();
 
@@ -129,6 +133,7 @@ export class LevelPlay {
     this.placeRider();
     this.caughtBefore = this.goal?.caught ?? 0;
     this.slowFor = 0;
+    this.runTime = 0;
     this.currentStage = "running";
     this.playground.setPaused(false);
     this.changed.emit();
@@ -176,11 +181,13 @@ export class LevelPlay {
     });
 
     this.slowFor = rider.speed < STUCK_SPEED ? this.slowFor + dt : 0;
+    this.runTime += dt;
     const { left, top, right, bottom } = this.bounds;
     const m = LOST_MARGIN_PX;
     const outside =
       p.x < left - m || p.x > right + m || p.y < top - m || p.y > bottom + m;
-    if (outside || this.slowFor > STUCK_SECONDS) this.lose(p);
+    const stuck = this.slowFor > STUCK_SECONDS;
+    if (outside || stuck || this.runTime > MAX_RUN_SECONDS) this.lose(p);
   }
 
   private win(): void {

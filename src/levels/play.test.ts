@@ -120,6 +120,25 @@ describe("playing a level", () => {
     expect(events).toEqual(["lost"]);
   });
 
+  it("calls time on a rider rolling to and fro for ever", () => {
+    const level = dropLevel();
+    level.goal = { x: 2000, y: 400 };
+    level.hearts = [];
+    // A smooth valley: a ball rolls up one side and back down, and on.
+    const valley: Point[] = [];
+    for (let x = 0; x <= 400; x += 8) {
+      valley.push({ x, y: 300 + 200 * Math.sin((x / 400) * Math.PI) });
+    }
+    level.pieces = { lines: [valley] };
+    level.start = { x: 60, y: 360 };
+    const { playground, play, events } = setUp(level);
+    play.go();
+    run(playground, play, 15);
+    expect(events).toEqual([]);
+    run(playground, play, 6);
+    expect(events).toEqual(["lost"]);
+  });
+
   it("brings the rider back if it's rubbed out before Go", () => {
     const { playground, play } = setUp();
     playground.eraseAt(200, 100, 20);
