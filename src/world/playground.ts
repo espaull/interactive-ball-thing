@@ -70,6 +70,9 @@ export class Playground {
   readonly balls: Ball[] = [];
   readonly bubbles: Bubble[] = [];
   private time = 0;
+  private isPaused = false;
+  // Whenever it's paused or carries on.
+  readonly pausedChanged = new Signal();
 
   // Goes up by one whenever the design changes, so Undo can tell cheaply
   // whether anything did.
@@ -121,7 +124,21 @@ export class Playground {
     return this.time;
   }
 
+  // While paused, nothing moves and cannons wait (their timers run on the
+  // playground's time). The design can still be changed, and balls dropped
+  // then wait where they're put.
+  get paused(): boolean {
+    return this.isPaused;
+  }
+
+  setPaused(paused: boolean): void {
+    if (paused === this.isPaused) return;
+    this.isPaused = paused;
+    this.pausedChanged.emit();
+  }
+
   step(dt: number): void {
+    if (this.isPaused) return;
     this.time += dt;
     this.fireCannons();
     this.boosts.push(this.balls.map((ball) => ball.body));

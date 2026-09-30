@@ -86,6 +86,43 @@ describe("balls", () => {
   });
 });
 
+describe("pausing", () => {
+  it("stops everything moving, and carries on where it left off", () => {
+    const pg = new Playground();
+    let changes = 0;
+    pg.pausedChanged.listen(() => changes++);
+    const ball = pg.addBall(100, 100);
+    ball.body.setLinearVelocity({ x: 3, y: 0 });
+    run(pg, 0.5);
+    pg.setPaused(true);
+    pg.setPaused(true); // already paused: not a change
+    const at = ball.position;
+    const bubble = pg.addBubble(300, 300); // dropped while paused, it waits
+    run(pg, 2);
+    expect(ball.position).toEqual(at);
+    expect(bubble.position).toEqual({ x: 300, y: 300 });
+
+    pg.setPaused(false);
+    run(pg, 0.5);
+    expect(ball.position.x).toBeGreaterThan(at.x);
+    expect(bubble.position.y).toBeLessThan(300);
+    expect(changes).toBe(2);
+  });
+
+  it("holds cannons' fire, as their timers run on the playground's time", () => {
+    const pg = new Playground();
+    let shots = 0;
+    pg.onFire = () => shots++;
+    pg.cannons.add(400, 400, 0, 0.5); // first shot due at 0.5s
+    pg.setPaused(true);
+    run(pg, 5);
+    expect(shots).toBe(0);
+    pg.setPaused(false);
+    run(pg, 0.6);
+    expect(shots).toBe(1);
+  });
+});
+
 describe("the design's revision", () => {
   it("goes up with every change to the design, and not otherwise", () => {
     const pg = new Playground();

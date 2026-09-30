@@ -1,5 +1,6 @@
 import "./style.css";
 import { Camera } from "./camera";
+import { Guides } from "./guides";
 import { UndoHistory } from "./history";
 import { Effects } from "./render/effects";
 import { render } from "./render/render";
@@ -26,6 +27,7 @@ const camera = new Camera();
 const effects = new Effects();
 const toolGroups = createToolGroups(playground, camera);
 const input = new Input(canvas, playground, camera, toolGroups[0][0]);
+const guides = new Guides();
 
 // However a bubble pops (clicked, or bumped too often): splash and sound.
 playground.onPop = (x, y, radius) => {
@@ -100,7 +102,9 @@ function frame(now: number): void {
   last = now;
   accumulator += dt;
   while (accumulator >= STEP) {
+    guides.update(playground, camera);
     playground.step(STEP);
+    if (!playground.paused) guides.afterStep(playground);
     accumulator -= STEP;
   }
   // Balls are removed below the lowest line (or the first screen), bubbles
@@ -110,7 +114,16 @@ function frame(now: number): void {
   // Hold the camera still while drawing or erasing, so the world doesn't
   // slide out from under the pointer.
   if (!input.isBusy) camera.update(dt, playground);
-  render(ctx, camera, background.current, playground, input.overlay, effects);
+  guides.update(playground, camera);
+  render(
+    ctx,
+    camera,
+    background.current,
+    playground,
+    input.overlay,
+    effects,
+    guides.view(playground),
+  );
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

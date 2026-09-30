@@ -1,6 +1,7 @@
 import { getPattern, type Background } from "./backgrounds";
 import type { Camera } from "../camera";
 import type { Effects } from "./effects";
+import type { GuideView } from "../guides";
 import type { Overlay } from "../tools";
 import type { Playground } from "../world/playground";
 import { ACCENT, ERASER_COLOR, PREVIEW_COLOR } from "../palette";
@@ -39,6 +40,7 @@ export function render(
   playground: Playground,
   overlay: Overlay,
   effects: Effects,
+  guides: GuideView,
 ): void {
   const {
     preview,
@@ -130,6 +132,8 @@ export function render(
     });
   }
 
+  drawTrail(ctx, guides);
+
   for (const ball of playground.balls) {
     const { x, y } = ball.position;
     const angle = ball.angle;
@@ -179,4 +183,20 @@ export function render(
   }
 
   ctx.restore();
+}
+
+// Where the ball has just been: dots in its colour, shrinking and fading
+// with age. Every other step is plenty.
+function drawTrail(ctx: CanvasRenderingContext2D, guides: GuideView): void {
+  ctx.fillStyle = guides.color;
+  for (const segment of guides.trail) {
+    for (let i = segment.length - 1; i >= 0; i -= 2) {
+      const { x, y, age } = segment[i];
+      ctx.globalAlpha = 0.6 * (1 - age);
+      ctx.beginPath();
+      ctx.arc(x, y, 2 + 3 * (1 - age), 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.globalAlpha = 1;
 }

@@ -12,9 +12,10 @@ const TOUCH_SLOP_PX = 10;
 // A pinch that moves this far (screen pixels) scrolls, so it turns Follow off.
 const PINCH_PAN_PX = 10;
 
-// A keyboard shortcut: Ctrl (or Cmd on a Mac) with a key, and Shift or not.
+// A keyboard shortcut: a key, with Ctrl (or Cmd on a Mac) and Shift or not.
 export interface Shortcut {
   key: string;
+  ctrl?: boolean;
   shift?: boolean;
   run(): void;
 }
@@ -54,7 +55,7 @@ export class Input {
   // Whenever something the tool was doing has finished (a press, a drag, a
   // key, switching tools), for Undo's checkpoints.
   readonly actionEnded = new Signal();
-  // Ctrl/Cmd shortcuts, which are handled here rather than by the tool.
+  // Shortcuts, which are handled here rather than by the tool.
   private shortcuts: Shortcut[] = [];
 
   // Fingers on the canvas, by pointer id (screen pixels).
@@ -401,17 +402,20 @@ export class Input {
       this.updateCursor();
       return;
     }
-    if (e.ctrlKey || e.metaKey) {
-      const shortcut = this.shortcuts.find(
-        (s) =>
-          s.key === e.key.toLowerCase() && (s.shift ?? false) === e.shiftKey,
-      );
-      if (shortcut) {
-        e.preventDefault();
-        shortcut.run();
-      }
+    const ctrl = e.ctrlKey || e.metaKey;
+    const shortcut = this.shortcuts.find(
+      (s) =>
+        s.key === e.key.toLowerCase() &&
+        (s.ctrl ?? false) === ctrl &&
+        (s.shift ?? false) === e.shiftKey,
+    );
+    if (shortcut) {
+      e.preventDefault();
+      shortcut.run();
       return;
     }
+    // Other Ctrl/Cmd combinations are the browser's, not the tool's.
+    if (ctrl) return;
     this.tool.key?.(e.key);
     this.actionEnded.emit();
   };

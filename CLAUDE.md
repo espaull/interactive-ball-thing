@@ -20,8 +20,10 @@ Live site: https://espaull.github.io/interactive-ball-thing/ — every push to
 ## Layout
 
 - `src/world/` — the simulation. `playground.ts` owns the Planck world,
-  balls, bubbles and stepping. The design is made of **parts** (`part.ts`):
-  `lines`, `boosts`, `portals`, `cups`, `cannons`, each a module that keeps
+  balls, bubbles and stepping (which does nothing while `paused`: every
+  timer runs on the playground's own time, so everything waits). The
+  design is made of **parts** (`part.ts`): `lines`, `boosts`, `portals`,
+  `cups`, `cannons`, each a module that keeps
   its own things and erases, picks up, saves and loads them
   (`playground.cups.add(…)`, `playground.cannons.aim(…)`). Their fields are
   read-only outside the part: every change goes through it, which bumps
@@ -42,10 +44,13 @@ Live site: https://espaull.github.io/interactive-ball-thing/ — every push to
   the gallery's pictures (which are fitted using each part's `extent`).
   `src/palette.ts` holds the colours.
 - `src/ui/` — the HTML controls: `toolbar` (tool buttons, menus, hint),
-  `actions` (Follow, Home, Undo, Clear), `background`, `gallery`. Each
-  `setup…` takes the `App` (`src/app.ts`), which `main.ts` builds before
-  running the fixed-step game loop. Keyboard shortcuts go through
-  `input.addShortcut`, so the tools never see them.
+  `actions` (Pause, Follow, Home, Undo, Clear), `background`, `gallery`.
+  Each `setup…` takes the `App` (`src/app.ts`), which `main.ts` builds
+  before running the fixed-step game loop. Keyboard shortcuts (plain keys like P,
+  or with Ctrl/Cmd) go through `input.addShortcut`, so the tools never see
+  them.
+- `src/guides.ts` — help for building around a moving ball: the trail
+  behind the followed (or newest) ball, recorded after each physics step.
 - `src/signal.ts` — `Signal`, for things several parts of the app listen to
   (`input.actionEnded`, `playground.designChanged`, `history.changed`).
   Effects and sounds use plain callbacks (`playground.onCatch`), as only

@@ -189,12 +189,20 @@ describe("input from the keyboard", () => {
   it("runs shortcuts instead of passing them to the tool", () => {
     const { input, tool } = setUp();
     const ran: string[] = [];
-    input.addShortcut({ key: "z", run: () => ran.push("undo") });
-    input.addShortcut({ key: "z", shift: true, run: () => ran.push("redo") });
+    input.addShortcut({ key: "z", ctrl: true, run: () => ran.push("undo") });
+    input.addShortcut({
+      key: "z",
+      ctrl: true,
+      shift: true,
+      run: () => ran.push("redo"),
+    });
+    input.addShortcut({ key: "p", run: () => ran.push("pause") });
     key("z", { ctrlKey: true });
     key("Z", { metaKey: true, shiftKey: true });
+    key("p");
     key("x", { ctrlKey: true }); // not a shortcut, and not for the tool
-    expect(ran).toEqual(["undo", "redo"]);
+    key("p", { ctrlKey: true }); // not the plain-P shortcut (it's Print)
+    expect(ran).toEqual(["undo", "redo", "pause"]);
     expect(tool.calls).toEqual([]);
   });
 

@@ -1,5 +1,6 @@
-// The Follow, Home, Undo and Clear buttons, and the Undo shortcuts.
+// The Pause, Follow, Home, Undo and Clear buttons, and their shortcuts.
 import type { App } from "../app";
+import { labelled } from "./toolbar";
 
 export function setupActions({
   camera,
@@ -8,6 +9,24 @@ export function setupActions({
   effects,
   history,
 }: App): void {
+  // Pause stops everything moving, to build around a ball mid-flight. The
+  // button turns into Play (and lights up) while paused.
+  const pauseButton = document.querySelector<HTMLButtonElement>("#pause")!;
+  const updatePause = () => {
+    const { paused } = playground;
+    pauseButton.replaceChildren(
+      paused ? "▶️" : "⏸️",
+      labelled(paused ? "Play" : "Pause"),
+    );
+    pauseButton.title = paused ? "Play (P)" : "Pause (P)";
+    pauseButton.classList.toggle("active", paused);
+  };
+  const togglePause = () => playground.setPaused(!playground.paused);
+  pauseButton.addEventListener("click", togglePause);
+  input.addShortcut({ key: "p", run: togglePause });
+  playground.pausedChanged.listen(updatePause);
+  updatePause();
+
   const followButton = document.querySelector<HTMLButtonElement>("#follow")!;
   camera.onFollowChange = (following) =>
     followButton.classList.toggle("active", following);
@@ -40,9 +59,9 @@ export function setupActions({
   updateUndo();
   // Ctrl/Cmd+Z undoes; Ctrl/Cmd+Shift+Z or Ctrl+Y redoes.
   const redo = () => history.redo();
-  input.addShortcut({ key: "z", run: undo });
-  input.addShortcut({ key: "z", shift: true, run: redo });
-  input.addShortcut({ key: "y", run: redo });
+  input.addShortcut({ key: "z", ctrl: true, run: undo });
+  input.addShortcut({ key: "z", ctrl: true, shift: true, run: redo });
+  input.addShortcut({ key: "y", ctrl: true, run: redo });
 
   // Clearing is a step Undo can take back (the design, not the balls).
   document.querySelector("#clear")!.addEventListener("click", () => {
