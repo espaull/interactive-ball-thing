@@ -130,4 +130,19 @@ describe("undo history", () => {
     history.checkpoint();
     expect(layout).toHaveBeenCalledTimes(1);
   });
+
+  it("starts afresh after a reset, with nothing to undo", () => {
+    const pg = new Playground();
+    const history = new UndoHistory(pg);
+    pg.lines.add(line(500));
+    history.checkpoint();
+    pg.lines.add(line(400));
+    history.reset();
+    expect(history.canUndo).toBe(false);
+    // The design as it was at the reset is where Undo stops.
+    pg.lines.add(line(300));
+    history.checkpoint();
+    history.undo();
+    expect(pg.lines.all).toHaveLength(2);
+  });
 });

@@ -8,6 +8,8 @@ import { ACCENT, ERASER_COLOR, PREVIEW_COLOR } from "../palette";
 import { drawBoostStrip } from "./boost";
 import { drawBubble } from "./bubble";
 import { drawDesign, drawPolyline, LINE_WIDTH_PX } from "./design";
+import { drawHeart } from "./heart";
+import type { Point } from "../geometry/point";
 import { drawPortal } from "./portal";
 import { drawSledge } from "./sledge";
 
@@ -42,6 +44,8 @@ export function render(
   overlay: Overlay,
   effects: Effects,
   guides: GuideView,
+  // A level's hearts still to collect.
+  hearts: Point[],
 ): void {
   const {
     preview,
@@ -132,6 +136,8 @@ export function render(
       ctx.fill();
     });
   }
+
+  hearts.forEach(({ x, y }, i) => drawHeart(ctx, x, y, time, i * 1.7));
 
   drawTrail(ctx, guides);
   drawPath(ctx, guides, camera.zoom);

@@ -1,8 +1,18 @@
 import type { Playground, Thing } from "./world/playground";
-import type { Point } from "./geometry/point";
+import type { Box, Point } from "./geometry/point";
 
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 2;
+// Fitting something on screen zooms in no further than this.
+const MAX_FIT_ZOOM = 1.25;
+
+// Space to keep clear at the edges of the screen (screen pixels), for the
+// toolbar and the hint.
+export interface Margins {
+  top: number;
+  bottom: number;
+  sides: number;
+}
 // How quickly the camera catches up with the ball (higher = snappier).
 const FOLLOW_SPEED = 5;
 
@@ -14,6 +24,9 @@ export class Camera {
   zoom = 1;
   width = 0;
   height = 0;
+
+  // What Home shows instead of the start, if anything: a level's area.
+  homeView: { box: Box; margins: Margins } | null = null;
 
   following = false;
   target: Thing | null = null;
@@ -37,10 +50,30 @@ export class Camera {
   }
 
   home(): void {
-    this.x = this.width / 2;
-    this.y = this.height / 2;
-    this.zoom = 1;
+    if (this.homeView) {
+      this.fit(this.homeView.box, this.homeView.margins);
+    } else {
+      this.x = this.width / 2;
+      this.y = this.height / 2;
+      this.zoom = 1;
+    }
     this.setFollowing(false);
+  }
+
+  // Show all of `box`, as big as fits between the margins.
+  fit(box: Box, margins: Margins): void {
+    const width = Math.max(1, this.width - margins.sides * 2);
+    const height = Math.max(1, this.height - margins.top - margins.bottom);
+    const zoom = Math.min(
+      width / (box.right - box.left),
+      height / (box.bottom - box.top),
+    );
+    this.zoom = Math.max(MIN_ZOOM, Math.min(MAX_FIT_ZOOM, zoom));
+    // The box's middle in the middle of the space between the margins.
+    this.x = (box.left + box.right) / 2;
+    this.y =
+      (box.top + box.bottom) / 2 -
+      (margins.top - margins.bottom) / 2 / this.zoom;
   }
 
   setFollowing(following: boolean, target: Thing | null = null): void {

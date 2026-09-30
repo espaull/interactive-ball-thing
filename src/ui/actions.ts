@@ -8,6 +8,7 @@ export function setupActions({
   input,
   effects,
   history,
+  levels,
 }: App): void {
   // Pause stops everything moving, to build around a ball mid-flight. The
   // button turns into Play (and lights up) while paused.
@@ -21,7 +22,10 @@ export function setupActions({
     pauseButton.title = paused ? "Play (P)" : "Pause (P)";
     pauseButton.classList.toggle("active", paused);
   };
-  const togglePause = () => playground.setPaused(!playground.paused);
+  // (A level uses Go instead: the rider waits, paused, until then.)
+  const togglePause = () => {
+    if (!levels.level) playground.setPaused(!playground.paused);
+  };
   pauseButton.addEventListener("click", togglePause);
   input.addShortcut({ key: "p", run: togglePause });
   playground.pausedChanged.listen(updatePause);

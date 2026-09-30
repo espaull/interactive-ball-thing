@@ -25,7 +25,7 @@ function fitToolbar(toolbar: HTMLElement): void {
 // Keep focus off the buttons, so Space and Enter never "press" one.
 export function keepFocusOffButtons(): void {
   for (const el of document.querySelectorAll(
-    "#toolbar, #tool-menu, #bg-button, #bg-picker, #saves-button, #saves-panel",
+    "#toolbar, #tool-menu, #bg-button, #bg-picker, #saves-button, #saves-panel, .screen",
   )) {
     el.addEventListener("mousedown", (e) => e.preventDefault());
   }
@@ -55,7 +55,8 @@ export function setupToolbar(
 ): Toolbar {
   const toolbar = document.querySelector<HTMLElement>("#toolbar")!;
   const hint = document.querySelector<HTMLElement>("#hint")!;
-  const divider = document.querySelector("#toolbar .divider")!;
+  // The divider between the tools and the actions (not the one after Back).
+  const divider = document.querySelector("#toolbar .divider:not(.minor)")!;
   const menu = document.querySelector<HTMLElement>("#tool-menu")!;
   // The tool each group button currently stands for.
   const chosen = groups.map((group) => group[0]);
@@ -189,8 +190,10 @@ export function setupToolbar(
         render();
         fitToolbar(toolbar);
       } else {
-        // The selected tool isn't allowed here: pick the first that is.
-        select(chosen.find(offered) ?? groups[0][0]);
+        // The selected tool isn't allowed here: pick the first that is,
+        // preferring one that places something the level gives you.
+        const tools = groups.flat().filter(offered);
+        select(tools.find((tool) => tool.supply) ?? tools[0] ?? groups[0][0]);
       }
     },
     showSupplies: render,

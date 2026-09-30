@@ -71,4 +71,21 @@ describe("saves", () => {
     expect(none.list()).toEqual([]);
     expect(none.add(withCup(1), "pic")).toBeNull();
   });
+
+  it("keep the most hearts won in each level", () => {
+    const { store } = setUp();
+    expect(store.loadProgress()).toEqual({});
+    store.recordWin("a", 2);
+    store.recordWin("a", 1);
+    store.recordWin("b", 0);
+    expect(store.loadProgress()).toEqual({ a: 2, b: 0 });
+  });
+
+  it("skip anything odd in the saved progress", () => {
+    const { storage, store } = setUp();
+    storage.setItem("levels", JSON.stringify({ a: 3, b: "lots", c: -1 }));
+    expect(store.loadProgress()).toEqual({ a: 3 });
+    storage.setItem("levels", "not json");
+    expect(store.loadProgress()).toEqual({});
+  });
 });

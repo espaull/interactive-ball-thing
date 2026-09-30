@@ -11,8 +11,11 @@
   <body>
     <canvas id="stage"></canvas>
     <nav id="toolbar">
+      <button id="back" title="Back to the menu">⬅️<span>Menu</span></button>
+      <span class="divider minor"></span>
       <!-- Tool buttons are added here from the list in src/tools/index.ts. -->
       <span class="divider"></span>
+      <button id="go" title="Let the rider go" hidden>▶️<span>Go</span></button>
       <button id="pause" title="Pause (P)">⏸️<span>Pause</span></button>
       <button id="follow" title="Camera follows the ball">
         🎥<span>Follow</span>
@@ -29,6 +32,38 @@
       🖼️
     </button>
     <div id="saves-panel" hidden></div>
+    <!-- The menu screens: see src/ui/levels.ts. -->
+    <div id="front" class="screen" hidden>
+      <div class="card">
+        <h1>Ball Playground</h1>
+        <div class="choices">
+          <button id="play-levels">
+            🎯<span>Levels</span><small id="hearts-total"></small>
+          </button>
+          <button id="free-play">🎨<span>Free play</span></button>
+        </div>
+      </div>
+    </div>
+    <div id="level-map" class="screen" hidden>
+      <div class="card">
+        <header>
+          <button class="back" title="Back">⬅️</button>
+          <h2>Levels</h2>
+        </header>
+        <div class="levels"></div>
+      </div>
+    </div>
+    <div id="win" class="screen" hidden>
+      <div class="card">
+        <h2>You did it!</h2>
+        <p class="hearts"></p>
+        <div class="choices">
+          <button class="again">🔄<span>Again</span></button>
+          <button class="levels-button">🗺️<span>Levels</span></button>
+          <button class="next">➡️<span>Next</span></button>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

@@ -73,3 +73,34 @@ describe("Camera.pinch", () => {
     expect(c.zoom).toBe(2);
   });
 });
+
+describe("Camera.fit", () => {
+  it("shows the whole box between the margins", () => {
+    const c = camera();
+    const box = { left: 0, top: 0, right: 1000, bottom: 600 };
+    const margins = { top: 100, bottom: 60, sides: 16 };
+    c.fit(box, margins);
+    const topLeft = onScreen(c, { x: box.left, y: box.top });
+    const bottomRight = onScreen(c, { x: box.right, y: box.bottom });
+    expect(topLeft.x).toBeCloseTo(16);
+    expect(bottomRight.x).toBeCloseTo(384);
+    expect(topLeft.y).toBeGreaterThanOrEqual(100 - 1e-9);
+    expect(bottomRight.y).toBeLessThanOrEqual(800 - 60 + 1e-9);
+    // Centred in the space between the margins.
+    expect((topLeft.y + bottomRight.y) / 2).toBeCloseTo((100 + 740) / 2);
+  });
+
+  it("is what Home shows, while there's a home view", () => {
+    const c = camera();
+    const box = { left: 0, top: 0, right: 100, bottom: 100 };
+    const margins = { top: 0, bottom: 0, sides: 0 };
+    c.homeView = { box, margins };
+    c.home();
+    // Small boxes aren't blown up hugely.
+    expect(c.zoom).toBe(1.25);
+    expect(c.x).toBe(50);
+    c.homeView = null;
+    c.home();
+    expect(c.zoom).toBe(1);
+  });
+});

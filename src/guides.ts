@@ -41,6 +41,8 @@ export class Guides {
   // worked out again when the design or the ball changes.
   private path: Point[][] = [];
   private pathFrom = "";
+  // Levels leave the path out, as it would give the answer away.
+  showPath = true;
 
   // The ball the guides are about: the one being followed, or else the
   // newest ball.
@@ -107,7 +109,9 @@ export class Guides {
   // playing, you can just watch), and only for balls, as bubbles wander.
   private predict(playground: Playground): Point[][] {
     const ball = this.focus;
-    if (!playground.paused || !(ball instanceof Ball)) return [];
+    if (!this.showPath || !playground.paused || !(ball instanceof Ball)) {
+      return [];
+    }
     const { x, y } = ball.position;
     const v = ball.body.getLinearVelocity();
     const from = `${playground.revision} ${x},${y} ${v.x},${v.y}`;

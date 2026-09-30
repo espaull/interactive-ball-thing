@@ -49,6 +49,16 @@ export class UndoHistory {
     this.changed.emit();
   }
 
+  // Start afresh from the design as it is now, with nothing to undo or
+  // redo (after switching between free play and a level).
+  reset(): void {
+    this.undoStack = [];
+    this.redoStack = [];
+    this.current = this.snapshot();
+    this.seen = this.playground.revision;
+    this.changed.emit();
+  }
+
   undo(): void {
     this.checkpoint();
     const previous = this.undoStack.pop();

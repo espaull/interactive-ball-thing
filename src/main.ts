@@ -5,7 +5,15 @@ import { UndoHistory } from "./history";
 import { Effects } from "./render/effects";
 import { render } from "./render/render";
 import { browserStorage, SaveStore, startAutosave } from "./saves";
-import { playCheer, playPop, playPortal, playThump } from "./sound";
+import {
+  playCheer,
+  playHeart,
+  playPop,
+  playPortal,
+  playThump,
+  playWhoosh,
+} from "./sound";
+import { LevelPlay } from "./levels/play";
 import { Budget } from "./world/budget";
 import { muzzle } from "./world/cannons";
 import { PORTAL_RADIUS_PX } from "./world/portals";
@@ -15,6 +23,7 @@ import type { App } from "./app";
 import { setupActions } from "./ui/actions";
 import { setupBackgroundPicker } from "./ui/background";
 import { setupGallery } from "./ui/gallery";
+import { setupLevels } from "./ui/levels";
 import { keepFocusOffButtons, setupToolbar } from "./ui/toolbar";
 import { Playground } from "./world/playground";
 
@@ -30,6 +39,7 @@ const budget = new Budget(playground);
 const toolGroups = createToolGroups(playground, camera, budget);
 const input = new Input(canvas, playground, camera, toolGroups[0][0]);
 const guides = new Guides();
+const levels = new LevelPlay(playground, budget);
 
 // However a bubble pops (clicked, or bumped too often): splash and sound.
 playground.onPop = (x, y, radius) => {
@@ -57,13 +67,27 @@ playground.onTeleport = ({ from, to, color }) => {
   playPortal();
 };
 
+// Collecting a heart in a level: a burst of little hearts, and a ding.
+levels.onHeart = ({ x, y }) => {
+  effects.heartBurst(x, y);
+  playHeart();
+};
+
+// The rider getting lost: a puff where it was, and where it's back to.
+levels.onLost = ({ x, y }) => {
+  effects.flash(x, y, 20, "#94a3b8");
+  const start = levels.level?.start;
+  if (start) effects.flash(start.x, start.y, 20, "#94a3b8");
+  playWhoosh();
+};
+
 keepFocusOffButtons();
 const toolbar = setupToolbar(toolGroups, input, budget);
 // Keep the supplies shown on the toolbar up to date.
 playground.designChanged.listen(() => toolbar.showSupplies());
 const background = setupBackgroundPicker(canvas);
 const saves = new SaveStore(browserStorage());
-startAutosave(saves, playground);
+const autosave = startAutosave(saves, playground);
 // After the autosave's loaded, so Undo can't take the page back to empty.
 const history = new UndoHistory(playground);
 const app: App = {
@@ -74,10 +98,15 @@ const app: App = {
   effects,
   history,
   saves,
+  autosave,
+  toolbar,
+  guides,
+  levels,
   background,
 };
 setupActions(app);
 setupGallery(app);
+setupLevels(app);
 
 function resize(): void {
   const dpr = window.devicePixelRatio || 1;
@@ -108,12 +137,16 @@ function frame(now: number): void {
   while (accumulator >= STEP) {
     guides.update(playground, camera);
     playground.step(STEP);
-    if (!playground.paused) guides.afterStep(playground);
+    if (!playground.paused) {
+      guides.afterStep(playground);
+      levels.afterStep(STEP);
+    }
     accumulator -= STEP;
   }
   // Balls are removed below the lowest line (or the first screen), bubbles
   // above the highest line (or the top of the first screen).
   playground.cull(camera.height, 0);
+  levels.update();
   effects.update(dt);
   // Hold the camera still while drawing or erasing, so the world doesn't
   // slide out from under the pointer.
@@ -129,6 +162,7 @@ function frame(now: number): void {
     input.overlay,
     effects,
     guides.view(playground),
+    levels.hearts,
   );
   requestAnimationFrame(frame);
 }
@@ -143,4 +177,6 @@ if (import.meta.env.DEV)
     undoHistory: history,
     budget,
     toolbar,
+    effects,
+    levels,
   });

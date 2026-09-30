@@ -5,6 +5,11 @@ import type { Playground } from "./world/playground";
 
 const AUTOSAVE_KEY = "autosave";
 const GALLERY_KEY = "saves";
+const PROGRESS_KEY = "levels";
+
+// How the levels have gone: the most hearts collected in each level
+// finished, by its id. A level that's in here has been finished.
+export type Progress = Record<string, number>;
 
 export interface Save {
   id: string;
@@ -56,6 +61,24 @@ export class SaveStore {
     return this.write(GALLERY_KEY, [save, ...this.list()]) ? save : null;
   }
 
+  loadProgress(): Progress {
+    const data = this.read(PROGRESS_KEY);
+    const progress: Progress = {};
+    if (typeof data !== "object" || data === null) return progress;
+    for (const [id, hearts] of Object.entries(data)) {
+      if (typeof hearts === "number" && hearts >= 0) progress[id] = hearts;
+    }
+    return progress;
+  }
+
+  // A level finished with this many hearts: kept if it's the most yet.
+  recordWin(id: string, hearts: number): Progress {
+    const progress = this.loadProgress();
+    progress[id] = Math.max(progress[id] ?? 0, hearts);
+    this.write(PROGRESS_KEY, progress);
+    return progress;
+  }
+
   remove(id: string): void {
     this.write(
       GALLERY_KEY,
@@ -88,12 +111,24 @@ export class SaveStore {
 // often, and not at all while nothing changes.
 const AUTOSAVE_DELAY_MS = 2000;
 
+// The autosave, which can be paused while a level's played (a level isn't
+// the free play playground, so mustn't be saved over it).
+export interface Autosave {
+  // Save any change waiting, then stop saving.
+  pause(): void;
+  resume(): void;
+}
+
 // Bring back the playground from last time, then save it shortly after
 // each change (and straight away when the page is hidden or closed).
-export function startAutosave(store: SaveStore, playground: Playground): void {
+export function startAutosave(
+  store: SaveStore,
+  playground: Playground,
+): Autosave {
   const saved = store.loadAutosave();
   if (saved) playground.loadLayout(saved);
 
+  let paused = false;
   let pending: number | undefined;
   const save = () => {
     window.clearTimeout(pending);
@@ -101,7 +136,7 @@ export function startAutosave(store: SaveStore, playground: Playground): void {
     store.autosave(playground.layout());
   };
   playground.designChanged.listen(() => {
-    pending ??= window.setTimeout(save, AUTOSAVE_DELAY_MS);
+    if (!paused) pending ??= window.setTimeout(save, AUTOSAVE_DELAY_MS);
   });
   const saveNow = () => {
     if (pending !== undefined) save();
@@ -110,6 +145,15 @@ export function startAutosave(store: SaveStore, playground: Playground): void {
     if (document.hidden) saveNow();
   });
   window.addEventListener("pagehide", saveNow);
+  return {
+    pause() {
+      saveNow();
+      paused = true;
+    },
+    resume() {
+      paused = false;
+    },
+  };
 }
 
 // The browser's storage, or null where it's unavailable.
