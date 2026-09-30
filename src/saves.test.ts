@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { Level } from "./levels/level";
 import { SaveStore } from "./saves";
 import { emptyLayout, type Layout } from "./world/layout";
 
@@ -88,4 +89,42 @@ describe("saves", () => {
     storage.setItem("levels", "not json");
     expect(store.loadProgress()).toEqual({});
   });
+
+  it("keep My levels, newest first, replacing one by its id", () => {
+    const { store } = setUp();
+    expect(store.keepLevel({ level: level("a", "A"), made: true })).toBe(true);
+    store.keepLevel({ level: level("b", "B"), made: false });
+    store.keepLevel({ level: level("a", "A2"), made: true });
+    expect(
+      store.myLevels().map(({ level, made }) => [level.name, made]),
+    ).toEqual([
+      ["B", false],
+      ["A2", true],
+    ]);
+    store.removeLevel("b");
+    expect(store.myLevels().map((l) => l.level.id)).toEqual(["a"]);
+  });
+
+  it("say when there's no room for another level", () => {
+    const { storage, store } = setUp();
+    storage.full = true;
+    expect(store.keepLevel({ level: level("c-1", "X"), made: true })).toBe(
+      false,
+    );
+  });
 });
+
+function level(id: string, name: string): Level {
+  return {
+    id,
+    name,
+    tip: "",
+    rider: "ball",
+    start: { x: 0, y: 0 },
+    goal: { x: 100, y: 0 },
+    hearts: [],
+    limits: { ink: 100 },
+    pieces: emptyLayout(),
+    solution: null,
+  };
+}

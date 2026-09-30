@@ -68,6 +68,13 @@ export function isLevelId(id: unknown): id is string {
   return typeof id === "string" && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(id);
 }
 
+// An id for a level made in the game (the built-in levels' ids are made
+// up by hand, and don't start with "c-").
+export function newLevelId(): string {
+  const random = Math.random().toString(36).slice(2, 8);
+  return `c-${Date.now().toString(36)}-${random}`;
+}
+
 // A level read from a file, or null if it isn't one.
 export function parseLevel(data: unknown): Level | null {
   if (!isRecord(data) || !isLevelId(data.id)) return null;

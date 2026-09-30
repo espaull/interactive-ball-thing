@@ -1,11 +1,20 @@
 // Playgrounds kept in this browser: the autosave (whatever was there last
 // time) and the gallery of saved playgrounds, each with a picture.
+import { parseLevel, type Level } from "./levels/level";
 import { parseLayout, type Layout } from "./world/layout";
 import type { Playground } from "./world/playground";
 
 const AUTOSAVE_KEY = "autosave";
 const GALLERY_KEY = "saves";
 const PROGRESS_KEY = "levels";
+const MY_LEVELS_KEY = "my-levels";
+
+// A level in My levels: one made here, or one shared with you (editing
+// that makes your own copy, so theirs stays as they made it).
+export interface MyLevel {
+  level: Level;
+  made: boolean;
+}
 
 // How the levels have gone: the most hearts collected in each level
 // finished, by its id. A level that's in here has been finished.
@@ -77,6 +86,34 @@ export class SaveStore {
     progress[id] = Math.max(progress[id] ?? 0, hearts);
     this.write(PROGRESS_KEY, progress);
     return progress;
+  }
+
+  // My levels, newest first.
+  myLevels(): MyLevel[] {
+    const data = this.read(MY_LEVELS_KEY);
+    const levels: MyLevel[] = [];
+    for (const item of Array.isArray(data) ? data : []) {
+      const level = parseLevel(item?.level);
+      if (level) levels.push({ level, made: item.made === true });
+    }
+    return levels;
+  }
+
+  // Keep a level in My levels: in place of the one with its id, or else at
+  // the front. Returns false if there's no room.
+  keepLevel(entry: MyLevel): boolean {
+    const levels = this.myLevels();
+    const at = levels.findIndex((l) => l.level.id === entry.level.id);
+    if (at === -1) levels.unshift(entry);
+    else levels[at] = entry;
+    return this.write(MY_LEVELS_KEY, levels);
+  }
+
+  removeLevel(id: string): void {
+    this.write(
+      MY_LEVELS_KEY,
+      this.myLevels().filter((l) => l.level.id !== id),
+    );
   }
 
   remove(id: string): void {
