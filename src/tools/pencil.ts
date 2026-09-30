@@ -1,5 +1,5 @@
 import type { LineEnd } from "../world/playground";
-import type { Point } from "../geometry/point";
+import { distance, lerp, type Point } from "../geometry/point";
 import { freehandShape, smoothStroke } from "../geometry/stroke";
 import { commitLine, lineEnds } from "./lines";
 import type { DownResult, Overlay, Tool, ToolContext } from "./tool";
@@ -21,9 +21,13 @@ export class PencilTool implements Tool {
       "Drag to draw · start or finish on a ring to join lines up · two fingers to scroll and zoom",
   };
   popsBubbles = true;
+  supply = "ink" as const;
 
   // The stroke being drawn, or null when not drawing.
   private stroke: Point[] | null = null;
+  // How long it is, and how long it can get before the ink runs out.
+  private length = 0;
+  private allowance = Infinity;
   // The line end the stroke started from, if it's continuing a line.
   private start: LineEnd | null = null;
 
@@ -33,20 +37,28 @@ export class PencilTool implements Tool {
     return this.stroke !== null;
   }
 
+  get using(): number {
+    return this.stroke ? this.length : 0;
+  }
+
   down(p: Point): DownResult {
+    this.allowance = this.ctx.budget.left("ink");
+    if (this.allowance <= 0) return "none";
     this.start = this.ctx.findSnap(p);
     this.stroke = [this.start?.point ?? p];
+    this.length = 0;
     return "drag";
   }
 
   move(p: Point): void {
     const last = this.stroke?.at(-1);
-    if (
-      last &&
-      Math.hypot(p.x - last.x, p.y - last.y) >= MIN_POINT_SPACING_PX
-    ) {
-      this.stroke!.push(p);
-    }
+    if (!last) return;
+    const step = distance(last, p);
+    const room = this.allowance - this.length;
+    if (step < MIN_POINT_SPACING_PX || room <= 0) return;
+    // Out of ink, the stroke ends where it ran out.
+    this.stroke!.push(step <= room ? p : lerp(last, p, room / step));
+    this.length += Math.min(step, room);
   }
 
   up(): void {

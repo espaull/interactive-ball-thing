@@ -1,13 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { PORTAL_COLORS } from "../palette";
+import { Budget, NO_LIMITS } from "../world/budget";
 import { Playground } from "../world/playground";
 import { PortalTool } from "./portal";
 import type { ToolContext } from "./tool";
 
 function setUp() {
   const playground = new Playground();
-  const ctx = { playground, camera: { zoom: 1 } } as unknown as ToolContext;
-  return { playground, tool: new PortalTool(ctx) };
+  const budget = new Budget(playground);
+  const ctx = {
+    playground,
+    camera: { zoom: 1 },
+    budget,
+  } as unknown as ToolContext;
+  return { playground, budget, tool: new PortalTool(ctx) };
 }
 
 function tap(tool: PortalTool, x: number, y: number): void {
@@ -101,5 +107,17 @@ describe("portal tool", () => {
     // The next tap starts a new pair rather than finishing the old one.
     tap(tool, 500, 100);
     expect(playground.portals.pairs).toHaveLength(0);
+  });
+
+  it("places no more pairs than a level allows", () => {
+    const { playground, budget, tool } = setUp();
+    budget.limits = { ...NO_LIMITS, portals: 1 };
+    tap(tool, 100, 100);
+    tap(tool, 500, 100);
+    // A second pair can't be started, but the first can still be re-aimed.
+    expect(tool.down({ x: 100, y: 400 })).toBe("none");
+    drag(tool, 100, 100, 100, 200);
+    expect(playground.portals.pairs).toHaveLength(1);
+    expect(playground.portals.pairs[0].a.aim).toBeCloseTo(Math.PI / 2);
   });
 });

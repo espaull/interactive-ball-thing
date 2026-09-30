@@ -6,6 +6,7 @@ import { Effects } from "./render/effects";
 import { render } from "./render/render";
 import { browserStorage, SaveStore, startAutosave } from "./saves";
 import { playCheer, playPop, playPortal, playThump } from "./sound";
+import { Budget } from "./world/budget";
 import { muzzle } from "./world/cannons";
 import { PORTAL_RADIUS_PX } from "./world/portals";
 import { createToolGroups } from "./tools";
@@ -25,7 +26,8 @@ const ctx = canvas.getContext("2d")!;
 const playground = new Playground();
 const camera = new Camera();
 const effects = new Effects();
-const toolGroups = createToolGroups(playground, camera);
+const budget = new Budget(playground);
+const toolGroups = createToolGroups(playground, camera, budget);
 const input = new Input(canvas, playground, camera, toolGroups[0][0]);
 const guides = new Guides();
 
@@ -56,7 +58,9 @@ playground.onTeleport = ({ from, to, color }) => {
 };
 
 keepFocusOffButtons();
-setupToolbar(toolGroups, input);
+const toolbar = setupToolbar(toolGroups, input, budget);
+// Keep the supplies shown on the toolbar up to date.
+playground.designChanged.listen(() => toolbar.showSupplies());
 const background = setupBackgroundPicker(canvas);
 const saves = new SaveStore(browserStorage());
 startAutosave(saves, playground);
@@ -114,6 +118,8 @@ function frame(now: number): void {
   // Hold the camera still while drawing or erasing, so the world doesn't
   // slide out from under the pointer.
   if (!input.isBusy) camera.update(dt, playground);
+  // Ink running down while a line's drawn.
+  else if (input.tool.using) toolbar.showSupplies();
   guides.update(playground, camera);
   render(
     ctx,
@@ -130,4 +136,11 @@ requestAnimationFrame(frame);
 
 // Handy for poking at things from the browser console while developing.
 if (import.meta.env.DEV)
-  Object.assign(window, { playground, camera, input, undoHistory: history });
+  Object.assign(window, {
+    playground,
+    camera,
+    input,
+    undoHistory: history,
+    budget,
+    toolbar,
+  });

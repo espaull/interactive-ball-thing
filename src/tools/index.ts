@@ -1,4 +1,5 @@
 import type { Camera } from "../camera";
+import type { Budget } from "../world/budget";
 import type { Playground } from "../world/playground";
 import { BoostTool } from "./boost";
 import { CannonTool } from "./cannon";
@@ -23,10 +24,12 @@ const SNAP_RADIUS_PX = 20;
 export function createToolGroups(
   playground: Playground,
   camera: Camera,
+  budget: Budget,
 ): Tool[][] {
   const ctx: ToolContext = {
     playground,
     camera,
+    budget,
     findSnap: (p, except) =>
       playground.lines.endAt(p.x, p.y, SNAP_RADIUS_PX / camera.zoom, except),
   };

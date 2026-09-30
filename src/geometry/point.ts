@@ -8,6 +8,11 @@ export function distance(a: Point, b: Point): number {
   return Math.hypot(b.x - a.x, b.y - a.y);
 }
 
+// The point a fraction `t` of the way from `a` to `b`.
+export function lerp(a: Point, b: Point, t: number): Point {
+  return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+}
+
 // Shortest distance from `p` to the segment a–b.
 export function distanceToSegment(p: Point, a: Point, b: Point): number {
   const dx = b.x - a.x;

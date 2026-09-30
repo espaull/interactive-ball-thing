@@ -29,6 +29,7 @@ export class PortalTool implements Tool {
       "Tap to place a portal, then tap again for its partner · drag as you place one to aim where balls come out · drag a portal to re-aim it, tap it to un-aim it",
   };
   popsBubbles = true;
+  supply = "portals" as const;
 
   // The first end of a pair, waiting for its partner. It's not in the
   // playground yet, so it's the tool's own to change.
@@ -65,6 +66,9 @@ export class PortalTool implements Tool {
     } else if (placed) {
       this.aim(placed, "placed", p);
     } else if (!this.first) {
+      if (this.ctx.budget.left("portals") < 1) {
+        return "none";
+      }
       this.first = { x: p.x, y: p.y, aim: null };
       this.aim(this.first, "new", p);
     } else {

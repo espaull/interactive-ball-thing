@@ -26,6 +26,7 @@ export class CannonTool implements Tool {
       "Drag the way you want it to fire (longer = stronger) · drag from a cannon to re-aim it · tap one to pause it",
   };
   popsBubbles = true;
+  supply = "cannons" as const;
 
   // The cannon being placed or aimed, while the pointer is down.
   private aiming: Cannon | null = null;
@@ -42,6 +43,7 @@ export class CannonTool implements Tool {
   down(p: Point): DownResult {
     const { cannons } = this.ctx.playground;
     const found = cannons.at(p.x, p.y);
+    if (!found && this.ctx.budget.left("cannons") < 1) return "none";
     this.existing = found !== null;
     this.aiming = found ?? cannons.add(p.x, p.y, DEFAULT_ANGLE, DEFAULT_POWER);
     this.dragged = false;

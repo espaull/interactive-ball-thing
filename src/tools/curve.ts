@@ -1,6 +1,6 @@
 import { catmullRom } from "../geometry/spline";
 import type { LineEnd } from "../world/playground";
-import type { Point } from "../geometry/point";
+import { lerp, polylineLength, type Point } from "../geometry/point";
 import { curveShape, LINE_SPACING_PX } from "../geometry/stroke";
 import { commitLine, lineEnds } from "./lines";
 import type { DownResult, Overlay, Tool, ToolContext } from "./tool";
@@ -22,6 +22,7 @@ export class CurveTool implements Tool {
   };
   // A bubble drifting under a click shouldn't spoil the curve.
   popsBubbles = false;
+  supply = "ink" as const;
 
   // Points placed so far, or null when no curve is started.
   private points: Point[] | null = null;
@@ -34,8 +35,15 @@ export class CurveTool implements Tool {
     return this.points !== null;
   }
 
+  get using(): number {
+    return this.points
+      ? polylineLength(catmullRom(this.points, LINE_SPACING_PX))
+      : 0;
+  }
+
   down(p: Point): DownResult {
     if (!this.points) {
+      if (this.ctx.budget.left("ink") <= 0) return "none";
       this.start = this.ctx.findSnap(p);
       this.points = [this.start?.point ?? p];
     } else if (this.isNearLastPoint(p)) {
@@ -43,12 +51,36 @@ export class CurveTool implements Tool {
       this.finish();
     } else if (this.ctx.findSnap(p, this.start?.line)) {
       // Clicking another line's end joins onto it, which finishes the curve.
-      this.points.push(p);
+      this.addPoint(p);
       this.finish();
-    } else {
-      this.points.push(p);
+    } else if (!this.addPoint(p)) {
+      this.finish();
     }
     return "none";
+  }
+
+  // Add a point, or only as far towards it as the ink goes. Returns whether
+  // there's ink left for more.
+  private addPoint(p: Point): boolean {
+    const points = this.points!;
+    const last = points.at(-1)!;
+    const ink = this.ctx.budget.left("ink");
+    const fits = (q: Point) =>
+      polylineLength(catmullRom([...points, q], LINE_SPACING_PX)) <= ink;
+    if (fits(p)) {
+      points.push(p);
+      return true;
+    }
+    // How far towards it fits, found by halving.
+    let lo = 0;
+    let hi = 1;
+    for (let i = 0; i < 12; i++) {
+      const mid = (lo + hi) / 2;
+      if (fits(lerp(last, p, mid))) lo = mid;
+      else hi = mid;
+    }
+    if (lo > 0) points.push(lerp(last, p, lo));
+    return false;
   }
 
   key(key: string): void {

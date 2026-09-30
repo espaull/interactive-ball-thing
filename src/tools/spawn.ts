@@ -13,6 +13,7 @@ export class BallTool implements Tool {
     touch: "Tap to drop a ball · tap bubbles to pop them",
   };
   popsBubbles = true;
+  supply = "drops" as const;
   busy = false;
 
   constructor(private ctx: ToolContext) {}
@@ -37,6 +38,7 @@ export class SledgeTool implements Tool {
     touch: "Tap to drop a sledge · it slides down slopes, faster than a ball",
   };
   popsBubbles = true;
+  supply = "drops" as const;
   busy = false;
 
   constructor(private ctx: ToolContext) {}
@@ -60,6 +62,7 @@ export class BubbleTool implements Tool {
     touch: "Tap to blow a bubble · tap one to pop it",
   };
   popsBubbles = true;
+  supply = "drops" as const;
   busy = false;
 
   constructor(private ctx: ToolContext) {}

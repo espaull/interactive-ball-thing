@@ -162,6 +162,8 @@ body {
   padding: 6px 12px;
   font-size: 13px;
   text-align: center;
+  /* A level's tip goes on its own line above the tool's hint. */
+  white-space: pre-line;
   color: #555;
   background: #ffffffcc;
   border-radius: 10px;
@@ -338,4 +340,50 @@ body {
   #saves-panel .tiles:not([data-columns="1"]) {
     grid-template-columns: repeat(2, minmax(0, 132px));
   }
+}
+
+/* A level can leave some tools out. (display: flex above would otherwise
+   override the hidden attribute.) */
+#toolbar button[hidden] {
+  display: none;
+}
+
+/* How much of a tool's supply a level has left: a meter for ink and
+   boost, dots for things counted. */
+.supply {
+  display: block;
+  width: 44px;
+  height: 6px;
+  margin-top: 2px;
+  overflow: hidden;
+  background: #e4dfd2;
+  border-radius: 3px;
+}
+.supply b {
+  display: block;
+  height: 100%;
+  background: #3b82f6;
+  border-radius: 3px;
+}
+.supply.count {
+  width: auto;
+  height: auto;
+  overflow: visible;
+  background: none;
+  font-size: 11px;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: 1px;
+  color: #3b82f6;
+}
+.supply.empty {
+  box-shadow: 0 0 0 1.5px #ef4444;
+}
+.supply.count.empty {
+  box-shadow: none;
+  color: #ef4444;
+}
+.toolbar-compact .supply {
+  width: 32px;
+  height: 4px;
 }

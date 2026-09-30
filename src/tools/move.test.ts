@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Camera } from "../camera";
 import type { Point } from "../geometry/point";
+import { Budget } from "../world/budget";
 import { Playground } from "../world/playground";
 import { MoveTool } from "./move";
 import type { ToolContext } from "./tool";
@@ -10,7 +11,11 @@ const STEP = 1 / 60;
 function setUp() {
   const playground = new Playground();
   const camera = new Camera();
-  const ctx = { playground, camera } as unknown as ToolContext;
+  const ctx = {
+    playground,
+    camera,
+    budget: new Budget(playground),
+  } as unknown as ToolContext;
   return { playground, camera, tool: new MoveTool(ctx) };
 }
 

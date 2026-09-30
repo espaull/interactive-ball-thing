@@ -13,11 +13,13 @@ export class CupTool implements Tool {
     touch: "Tap to place a goal cup · get balls into it to score",
   };
   popsBubbles = true;
+  supply = "cups" as const;
   busy = false;
 
   constructor(private ctx: ToolContext) {}
 
   down(p: Point): DownResult {
+    if (this.ctx.budget.left("cups") < 1) return "none";
     this.ctx.playground.cups.add(p.x, p.y);
     return "none";
   }
