@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Point } from "../geometry/point";
+import { emptyLayout } from "./layout";
 import { Playground } from "./playground";
 import { predictPath } from "./prediction";
 
@@ -61,6 +62,23 @@ describe("predicting a ball's path", () => {
     const real = realPath(pg, 1.5);
     expect(predicted.map((s) => s.length)).toEqual(real.map((s) => s.length));
     expect(worstGap(predicted, real)).toBeLessThan(3);
+  });
+
+  it("includes a level's fixed pieces", () => {
+    const pg = new Playground();
+    pg.fix({
+      ...emptyLayout(),
+      lines: [
+        [
+          { x: 0, y: 400 },
+          { x: 400, y: 400 },
+        ],
+      ],
+    });
+    const ball = pg.addBall(200, 300);
+    // It lands on the fixed floor rather than falling through.
+    const end = predictPath(pg, ball).at(-1)!.at(-1)!;
+    expect(end.y).toBeLessThan(400);
   });
 
   it("starts a new stretch after each trip through a portal", () => {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { emptyLayout, type Layout } from "./layout";
 import { Playground, Sledge } from "./playground";
 
 const STEP = 1 / 60;
@@ -489,6 +490,78 @@ describe("erasing balls", () => {
     pg.eraseAt(200 + stuck.radius + 10, 200, 18);
     expect(pg.contains(stuck)).toBe(false);
     expect(pg.contains(other)).toBe(true);
+    expect(pg.world.getBodyCount()).toBe(1);
+  });
+});
+
+describe("fixed things (a level's pieces)", () => {
+  // A level: a floor, a boost, a portal pair, a goal cup and a cannon.
+  function fixLevel(pg: Playground): void {
+    pg.fix({
+      ...emptyLayout(),
+      lines: [line(400)],
+      boosts: [line(300)],
+      portals: [
+        {
+          a: { x: 600, y: 100, aim: null },
+          b: { x: 700, y: 100, aim: null },
+          color: "purple",
+        },
+      ],
+      cups: [{ x: 300, y: 200 }],
+      cannons: [{ x: 500, y: 200, angle: 0, power: 0.5, active: false }],
+    });
+  }
+
+  it("work like any other: balls land on fixed lines", () => {
+    const pg = new Playground();
+    pg.fix({ ...emptyLayout(), lines: [line(400)] });
+    const ball = pg.addBall(100, 300);
+    run(pg, 2);
+    expect(ball.position.y).toBeGreaterThan(370);
+    expect(ball.position.y).toBeLessThan(400);
+  });
+
+  it("can't be rubbed out, picked up or joined onto", () => {
+    const pg = new Playground();
+    fixLevel(pg);
+    const before = JSON.stringify(pg.fixedLayout());
+    for (let x = 0; x <= 800; x += 10) {
+      for (const y of [100, 200, 300, 400]) pg.eraseAt(x, y, 30);
+    }
+    expect(JSON.stringify(pg.fixedLayout())).toBe(before);
+    for (const [x, y] of [
+      [600, 100],
+      [300, 200],
+      [500, 200],
+    ]) {
+      expect(pg.grabAt(x, y)).toBeNull();
+    }
+    expect(pg.lines.endAt(0, 400, 20)).toBeNull();
+  });
+
+  it("aren't the player's design: not saved, cleared or undone", () => {
+    const pg = new Playground();
+    fixLevel(pg);
+    const fixed = JSON.stringify(pg.fixedLayout());
+    expect(pg.layout()).toEqual(emptyLayout());
+    pg.lines.add(line(100));
+    expect(pg.layout().lines).toEqual([line(100)]);
+    // Clearing, and loading (as Undo does), only touch the player's things.
+    pg.clear();
+    pg.loadLayout({ ...emptyLayout(), cups: [{ x: 50, y: 50 }] });
+    expect(JSON.stringify(pg.fixedLayout())).toBe(fixed);
+    expect(pg.cups.all).toHaveLength(2);
+  });
+
+  it("go when the level's replaced with an empty one", () => {
+    const pg = new Playground();
+    fixLevel(pg);
+    pg.lines.add(line(100));
+    pg.fix(emptyLayout());
+    expect(pg.fixedLayout()).toEqual(emptyLayout());
+    expect(pg.layout().lines).toEqual([line(100)]);
+    // Just the player's line's body is left.
     expect(pg.world.getBodyCount()).toBe(1);
   });
 });

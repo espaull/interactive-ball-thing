@@ -27,6 +27,8 @@ export class Cup {
     readonly x: number,
     readonly y: number,
     readonly body: Body,
+    // Part of a level (its goal): it can't be rubbed out or moved.
+    readonly fixed = false,
   ) {}
 
   // Is `p` (a ball's centre) down inside the cup? The ball is caught once
@@ -62,7 +64,7 @@ export class Cups implements Part<SavedCups> {
     return this.list.length === 0;
   }
 
-  add(x: number, y: number): Cup {
+  add(x: number, y: number, fixed = false): Cup {
     // The outline is relative to the body, so moving the body moves the cup.
     const body = this.world.createBody({
       type: "static",
@@ -72,18 +74,18 @@ export class Cups implements Part<SavedCups> {
       shape: new ChainShape(CUP_OUTLINE.map(toMetres), false),
       friction: 0.6,
     });
-    const cup = new Cup(x, y, body);
+    const cup = new Cup(x, y, body, fixed);
     this.list.push(cup);
     this.changed();
     return cup;
   }
 
-  // The cup at a point, if any. The most recently placed one wins, as it's
-  // drawn on top.
+  // The player's cup at a point, if any. The most recently placed one wins,
+  // as it's drawn on top.
   at(x: number, y: number): Cup | null {
     for (let i = this.list.length - 1; i >= 0; i--) {
       const c = this.list[i];
-      if (Math.hypot(c.x - x, c.y - y) < CUP_RADIUS_PX) return c;
+      if (!c.fixed && Math.hypot(c.x - x, c.y - y) < CUP_RADIUS_PX) return c;
     }
     return null;
   }
@@ -106,6 +108,7 @@ export class Cups implements Part<SavedCups> {
 
   eraseAt(x: number, y: number, radius: number): void {
     for (const cup of [...this.list]) {
+      if (cup.fixed) continue;
       if (Math.hypot(cup.x - x, cup.y - y) < radius + CUP_RADIUS_PX) {
         this.world.destroyBody(cup.body);
         this.list.splice(this.list.indexOf(cup), 1);
@@ -118,28 +121,34 @@ export class Cups implements Part<SavedCups> {
     for (const cup of this.list) add(cup, CUP_RADIUS_PX);
   }
 
-  save(): SavedCups {
-    return this.list.map(roundPoint);
+  save(fixed = false): SavedCups {
+    return this.list.filter((cup) => cup.fixed === fixed).map(roundPoint);
   }
 
   // Cups keep their count through a load (for Undo): matched in order if
   // there are as many as before (so one that was moved keeps it), or else
   // by where they are.
-  load(saved: SavedCups): void {
-    const before = this.list.map((cup) => cup.caught);
+  load(saved: SavedCups, fixed = false): void {
+    const old = this.list.filter((cup) => cup.fixed === fixed);
     const key = (p: Point) => JSON.stringify(roundPoint(p));
-    const caught = new Map(this.list.map((cup) => [key(cup), cup.caught]));
-    this.clear();
-    for (const { x, y } of saved) this.add(x, y);
-    const sameCups = this.list.length === before.length;
-    this.list.forEach((cup, i) => {
-      cup.caught = sameCups ? before[i] : (caught.get(key(cup)) ?? 0);
+    const caught = new Map(old.map((cup) => [key(cup), cup.caught]));
+    this.removeAll(fixed);
+    const added = saved.map(({ x, y }) => this.add(x, y, fixed));
+    const sameCups = added.length === old.length;
+    added.forEach((cup, i) => {
+      cup.caught = sameCups ? old[i].caught : (caught.get(key(cup)) ?? 0);
     });
   }
 
   clear(): void {
-    for (const cup of this.list) this.world.destroyBody(cup.body);
-    this.list = [];
+    this.removeAll(false);
+  }
+
+  private removeAll(fixed: boolean): void {
+    for (const cup of this.list) {
+      if (cup.fixed === fixed) this.world.destroyBody(cup.body);
+    }
+    this.list = this.list.filter((cup) => cup.fixed !== fixed);
     this.changed();
   }
 }

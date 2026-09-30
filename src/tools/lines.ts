@@ -9,9 +9,12 @@ function endingAt(end: LineEnd): Point[] {
   return end.atStart ? [...end.line.points].reverse() : end.line.points;
 }
 
-// Ends of every line, for the rings a new line can join onto.
+// Ends of every line a new line can join onto (not fixed ones), for their
+// rings.
 export function lineEnds(playground: Playground): Point[] {
-  return playground.lines.all.flatMap((l) => [l.points[0], l.points.at(-1)!]);
+  return playground.lines.all
+    .filter((l) => !l.fixed)
+    .flatMap((l) => [l.points[0], l.points.at(-1)!]);
 }
 
 // Finish a line. It joins onto `start` (the line end it began from, if any)

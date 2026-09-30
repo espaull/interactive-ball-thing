@@ -19,6 +19,7 @@ export function predictPath(
 ): Point[][] {
   const copy = new Playground();
   copy.world.setGravity(playground.world.getGravity());
+  copy.fix({ ...playground.fixedLayout(), cannons: [] });
   copy.loadLayout({ ...playground.layout(), cannons: [] });
 
   const { x, y } = ball.position;

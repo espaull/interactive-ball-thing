@@ -36,6 +36,8 @@ export interface Cannon {
   readonly held: boolean;
   // Playground time of its next shot.
   readonly nextShotAt: number;
+  // Part of a level: it can't be rubbed out, moved or re-aimed.
+  readonly fixed: boolean;
 }
 
 // Each cannon, as it's saved.
@@ -88,6 +90,7 @@ export class Cannons implements Part<SavedCannons> {
     angle: number,
     power: number,
     active = true,
+    fixed = false,
   ): Cannon {
     const cannon = {
       x,
@@ -97,18 +100,22 @@ export class Cannons implements Part<SavedCannons> {
       active,
       held: false,
       nextShotAt: this.now() + 0.5,
+      fixed,
     };
     this.list.push(cannon);
     this.changed();
     return cannon;
   }
 
-  // The cannon at a point (with a little slack for fingers), if any. The
-  // most recently placed one wins, as it's drawn on top.
+  // The player's cannon at a point (with a little slack for fingers), if
+  // any. The most recently placed one wins, as it's drawn on top.
   at(x: number, y: number): Cannon | null {
     for (let i = this.list.length - 1; i >= 0; i--) {
       const c = this.list[i];
-      if (Math.hypot(c.x - x, c.y - y) < CANNON_RADIUS_PX + TAP_SLACK_PX) {
+      if (
+        !c.fixed &&
+        Math.hypot(c.x - x, c.y - y) < CANNON_RADIUS_PX + TAP_SLACK_PX
+      ) {
         return c;
       }
     }
@@ -168,6 +175,7 @@ export class Cannons implements Part<SavedCannons> {
 
   eraseAt(x: number, y: number, radius: number): void {
     for (const cannon of [...this.list]) {
+      if (cannon.fixed) continue;
       if (Math.hypot(cannon.x - x, cannon.y - y) < radius + CANNON_RADIUS_PX) {
         this.list.splice(this.list.indexOf(cannon), 1);
         this.changed();
@@ -180,24 +188,30 @@ export class Cannons implements Part<SavedCannons> {
     for (const cannon of this.list) add(cannon, CANNON_RADIUS_PX + 20);
   }
 
-  save(): SavedCannons {
-    return this.list.map(({ x, y, angle, power, active }) => ({
-      ...roundPoint({ x, y }),
-      angle,
-      power,
-      active,
-    }));
+  save(fixed = false): SavedCannons {
+    return this.list
+      .filter((cannon) => cannon.fixed === fixed)
+      .map(({ x, y, angle, power, active }) => ({
+        ...roundPoint({ x, y }),
+        angle,
+        power,
+        active,
+      }));
   }
 
-  load(saved: SavedCannons): void {
-    this.clear();
+  load(saved: SavedCannons, fixed = false): void {
+    this.removeAll(fixed);
     for (const { x, y, angle, power, active } of saved) {
-      this.add(x, y, angle, power, active);
+      this.add(x, y, angle, power, active, fixed);
     }
   }
 
   clear(): void {
-    this.list = [];
+    this.removeAll(false);
+  }
+
+  private removeAll(fixed: boolean): void {
+    this.list = this.list.filter((cannon) => cannon.fixed !== fixed);
     this.changed();
   }
 }

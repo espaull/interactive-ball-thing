@@ -30,7 +30,10 @@ Live site: https://espaull.github.io/interactive-ball-thing/ — every push to
   read-only outside the part: every change goes through it, which bumps
   `playground.revision` and emits `designChanged` (Undo and the autosave
   rely on this). What isn't saved (a cannon being held or its next shot, a
-  cup's count) isn't the design, so changing it doesn't count. `saved.ts`
+  cup's count) isn't the design, so changing it doesn't count. Things can
+  be **fixed** (a level's own pieces, loaded with `playground.fix(…)`):
+  they work like any other but can't be erased, moved or joined onto, and
+  aren't in `layout()`, so saves and Undo never see them. `saved.ts`
   has the helpers each part's parser uses. `bubbles` and `crossings` add
   behaviour on top of Planck.
   **Planck works in metres; only code in `world/` may touch Planck bodies

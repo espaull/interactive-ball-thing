@@ -237,7 +237,8 @@ export class Playground {
     return box;
   }
 
-  // The design, as plain data to save.
+  // The design, as plain data to save: the player's things, not the fixed
+  // ones (see part.ts).
   layout(): Layout {
     return {
       version: 1,
@@ -249,20 +250,43 @@ export class Playground {
     };
   }
 
-  // Replace everything with a saved design (and no balls or bubbles).
+  // The fixed things: a level's own pieces.
+  fixedLayout(): Layout {
+    return {
+      version: 1,
+      lines: this.lines.save(true),
+      boosts: this.boosts.save(true),
+      portals: this.portals.save(true),
+      cups: this.cups.save(true),
+      cannons: this.cannons.save(true),
+    };
+  }
+
+  // Replace the player's design with a saved one (and no balls or bubbles).
+  // Fixed things stay.
   loadLayout(layout: Layout): void {
     this.clear();
     this.restoreLayout(layout);
   }
 
-  // Put the design back to an earlier one (for Undo), leaving the balls and
-  // bubbles where they are.
+  // Put the player's design back to an earlier one (for Undo), leaving the
+  // balls and bubbles where they are.
   restoreLayout(layout: Layout): void {
     this.lines.load(layout.lines);
     this.boosts.load(layout.boosts);
     this.portals.load(layout.portals);
     this.cups.load(layout.cups);
     this.cannons.load(layout.cannons);
+  }
+
+  // Replace the fixed things (a level's pieces) with these. An empty layout
+  // takes them all away.
+  fix(layout: Layout): void {
+    this.lines.load(layout.lines, true);
+    this.boosts.load(layout.boosts, true);
+    this.portals.load(layout.portals, true);
+    this.cups.load(layout.cups, true);
+    this.cannons.load(layout.cannons, true);
   }
 
   // Fire every cannon whose next shot is due.
@@ -367,6 +391,8 @@ export class Playground {
     }
   }
 
+  // Remove the player's design, and every ball and bubble. Fixed things
+  // stay.
   clear(): void {
     for (const part of this.parts) part.clear();
     for (const ball of this.balls) this.world.destroyBody(ball.body);

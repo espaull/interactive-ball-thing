@@ -13,6 +13,8 @@ export interface Line {
   readonly body: Body;
   readonly points: Point[]; // pixels, kept for drawing
   readonly bounds: Box;
+  // Part of a level: it can't be rubbed out or joined onto.
+  readonly fixed: boolean;
 }
 
 // One end of a line, for continuing it.
@@ -66,12 +68,13 @@ export class Lines implements Part<SavedLines> {
     return Math.max(...this.list.map((line) => line.bounds.bottom));
   }
 
-  add(points: Point[]): void {
+  add(points: Point[], fixed = false): void {
     if (points.length < 2) return;
     const line = {
       body: this.createChain(points),
       points,
       bounds: boundsOf(points),
+      fixed,
     };
     this.list.push(line);
     this.byBody.set(line.body, line);
@@ -82,7 +85,7 @@ export class Lines implements Part<SavedLines> {
   // stays one smooth chain with no bump at the join.
   replace(line: Line, points: Point[]): void {
     const own = line as Mutable<Line>;
-    if (points.length < 2 || !this.list.includes(own)) return;
+    if (points.length < 2 || own.fixed || !this.list.includes(own)) return;
     this.destroyChain(own.body);
     own.body = this.createChain(points);
     own.points = points;
@@ -103,7 +106,7 @@ export class Lines implements Part<SavedLines> {
   // the eraser cuts through.
   eraseAt(x: number, y: number, radius: number): void {
     for (const line of [...this.list]) {
-      if (!isNearBox(line.bounds, { x, y }, radius)) continue;
+      if (line.fixed || !isNearBox(line.bounds, { x, y }, radius)) continue;
       const pieces = erasePolyline(line.points, { x, y }, radius);
       if (!pieces) continue;
       this.remove(line);
@@ -111,13 +114,14 @@ export class Lines implements Part<SavedLines> {
     }
   }
 
-  // The line end closest to a point, within `radius` pixels, ignoring the
-  // ends of `except`.
+  // The end of one of the player's lines closest to a point, within `radius`
+  // pixels, ignoring the ends of `except`. (Fixed lines can't be joined
+  // onto, as joining changes the line.)
   endAt(x: number, y: number, radius: number, except?: Line): LineEnd | null {
     let best: LineEnd | null = null;
     let bestDistance = radius;
     for (const line of this.list) {
-      if (line === except) continue;
+      if (line === except || line.fixed) continue;
       for (const atStart of [true, false]) {
         const point = atStart ? line.points[0] : line.points.at(-1)!;
         const distance = Math.hypot(point.x - x, point.y - y);
@@ -136,18 +140,26 @@ export class Lines implements Part<SavedLines> {
     }
   }
 
-  save(): SavedLines {
-    return this.list.map((line) => line.points.map(roundPoint));
+  save(fixed = false): SavedLines {
+    return this.list
+      .filter((line) => line.fixed === fixed)
+      .map((line) => line.points.map(roundPoint));
   }
 
-  load(saved: SavedLines): void {
-    this.clear();
-    for (const points of saved) this.add(points);
+  load(saved: SavedLines, fixed = false): void {
+    this.removeAll(fixed);
+    for (const points of saved) this.add(points, fixed);
   }
 
   clear(): void {
-    for (const line of this.list) this.destroyChain(line.body);
-    this.list = [];
+    this.removeAll(false);
+  }
+
+  private removeAll(fixed: boolean): void {
+    for (const line of this.list) {
+      if (line.fixed === fixed) this.destroyChain(line.body);
+    }
+    this.list = this.list.filter((line) => line.fixed !== fixed);
     this.changed();
   }
 

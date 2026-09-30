@@ -26,7 +26,11 @@ export const BOOST_MAX_SPEED = 20;
 export class BoostZone {
   readonly bounds: Box;
 
-  constructor(readonly points: Point[]) {
+  constructor(
+    readonly points: Point[],
+    // Part of a level: it can't be rubbed out.
+    readonly fixed = false,
+  ) {
     this.bounds = boundsOf(points);
   }
 
@@ -73,9 +77,9 @@ export class Boosts implements Part<SavedBoosts> {
   }
 
   // A strip along `points`, pushing balls in the direction they run.
-  add(points: Point[]): void {
+  add(points: Point[], fixed = false): void {
     if (points.length < 2) return;
-    this.list.push(new BoostZone(points));
+    this.list.push(new BoostZone(points, fixed));
     this.changed();
   }
 
@@ -104,7 +108,7 @@ export class Boosts implements Part<SavedBoosts> {
   // still point the same way.
   eraseAt(x: number, y: number, radius: number): void {
     for (const boost of [...this.list]) {
-      if (!isNearBox(boost.bounds, { x, y }, radius)) continue;
+      if (boost.fixed || !isNearBox(boost.bounds, { x, y }, radius)) continue;
       const pieces = erasePolyline(boost.points, { x, y }, radius);
       if (!pieces) continue;
       this.list.splice(this.list.indexOf(boost), 1);
@@ -119,17 +123,23 @@ export class Boosts implements Part<SavedBoosts> {
     }
   }
 
-  save(): SavedBoosts {
-    return this.list.map((boost) => boost.points.map(roundPoint));
+  save(fixed = false): SavedBoosts {
+    return this.list
+      .filter((boost) => boost.fixed === fixed)
+      .map((boost) => boost.points.map(roundPoint));
   }
 
-  load(saved: SavedBoosts): void {
-    this.clear();
-    for (const points of saved) this.add(points);
+  load(saved: SavedBoosts, fixed = false): void {
+    this.removeAll(fixed);
+    for (const points of saved) this.add(points, fixed);
   }
 
   clear(): void {
-    this.list = [];
+    this.removeAll(false);
+  }
+
+  private removeAll(fixed: boolean): void {
+    this.list = this.list.filter((boost) => boost.fixed !== fixed);
     this.changed();
   }
 }

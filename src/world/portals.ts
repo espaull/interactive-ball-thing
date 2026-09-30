@@ -38,6 +38,8 @@ export interface PortalPair {
   readonly a: PortalEnd;
   readonly b: PortalEnd;
   readonly color: string;
+  // Part of a level: it can't be rubbed out, moved or re-aimed.
+  readonly fixed: boolean;
 }
 
 // Each pair, as it's saved.
@@ -95,11 +97,13 @@ export class Portals implements Part<SavedPortals> {
     color: string,
     aimA: number | null = null,
     aimB: number | null = null,
+    fixed = false,
   ): PortalPair {
     const pair = {
       a: { x: a.x, y: a.y, aim: aimA },
       b: { x: b.x, y: b.y, aim: aimB },
       color,
+      fixed,
     };
     this.list.push(pair);
     this.changed();
@@ -112,10 +116,12 @@ export class Portals implements Part<SavedPortals> {
     this.changed();
   }
 
-  // The portal end at a point (with a little slack for fingers), if any. The
-  // most recently placed wins, as it's drawn on top.
+  // The end of one of the player's portals at a point (with a little slack
+  // for fingers), if any. The most recently placed wins, as it's drawn on
+  // top.
   at(x: number, y: number): PortalEnd | null {
     for (let i = this.list.length - 1; i >= 0; i--) {
+      if (this.list[i].fixed) continue;
       for (const end of [this.list[i].b, this.list[i].a]) {
         if (distance(end, { x, y }) < PORTAL_RADIUS_PX + TAP_SLACK_PX) {
           return end;
@@ -141,7 +147,7 @@ export class Portals implements Part<SavedPortals> {
     const near = (p: Point) =>
       distance(p, { x, y }) < radius + PORTAL_RADIUS_PX;
     for (const pair of [...this.list]) {
-      if (near(pair.a) || near(pair.b)) {
+      if (!pair.fixed && (near(pair.a) || near(pair.b))) {
         this.list.splice(this.list.indexOf(pair), 1);
         this.changed();
       }
@@ -156,21 +162,29 @@ export class Portals implements Part<SavedPortals> {
     }
   }
 
-  save(): SavedPortals {
-    return this.list.map(({ a, b, color }) => ({
-      a: { ...roundPoint(a), aim: a.aim },
-      b: { ...roundPoint(b), aim: b.aim },
-      color,
-    }));
+  save(fixed = false): SavedPortals {
+    return this.list
+      .filter((pair) => pair.fixed === fixed)
+      .map(({ a, b, color }) => ({
+        a: { ...roundPoint(a), aim: a.aim },
+        b: { ...roundPoint(b), aim: b.aim },
+        color,
+      }));
   }
 
-  load(saved: SavedPortals): void {
-    this.clear();
-    for (const { a, b, color } of saved) this.add(a, b, color, a.aim, b.aim);
+  load(saved: SavedPortals, fixed = false): void {
+    this.removeAll(fixed);
+    for (const { a, b, color } of saved) {
+      this.add(a, b, color, a.aim, b.aim, fixed);
+    }
   }
 
   clear(): void {
-    this.list = [];
+    this.removeAll(false);
+  }
+
+  private removeAll(fixed: boolean): void {
+    this.list = this.list.filter((pair) => pair.fixed !== fixed);
     this.changed();
   }
 

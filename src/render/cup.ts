@@ -50,7 +50,8 @@ export function drawCup(ctx: CanvasRenderingContext2D, cup: Cup): void {
   );
   ctx.stroke();
 
-  if (cup.caught > 0) {
+  // (A level's goal cup doesn't count: getting there once is the point.)
+  if (cup.caught > 0 && !cup.fixed) {
     ctx.font = "bold 20px system-ui, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "bottom";

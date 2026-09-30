@@ -6,18 +6,28 @@ import type { Point } from "../geometry/point";
 // them rather than knowing about each one. Everything that changes the
 // design goes through a part, which calls `changed` (for Undo and the
 // autosave).
+//
+// Some things are *fixed*: a level's own pieces. They work like any other
+// (balls roll on fixed lines, fall into fixed cups), but can't be rubbed
+// out, moved or re-aimed, and aren't in the design that's saved or undone.
+// Everything else is the player's own.
 export interface Part<Saved> {
+  // No things at all, fixed or not.
   readonly isEmpty: boolean;
-  // Rub out whatever's within `radius` of a point.
+  // Rub out whatever's within `radius` of a point (but nothing fixed).
   eraseAt(x: number, y: number, radius: number): void;
-  // Pick up the thing at a point to move it, if this part's things move.
+  // Pick up the thing at a point to move it, if this part's things move
+  // (fixed ones don't).
   grabAt?(x: number, y: number): Grabbed | null;
   // Say how far each thing reaches, and from where (for fitting the
-  // gallery's pictures).
+  // gallery's pictures and the view of a level).
   extent(add: (p: Point, reach: number) => void): void;
-  save(): Saved;
-  // Replace everything with a saved design.
-  load(saved: Saved): void;
+  // The player's things, or with `fixed` the fixed ones, as saved data.
+  save(fixed?: boolean): Saved;
+  // Replace the player's things (or with `fixed`, the fixed ones) with a
+  // saved design.
+  load(saved: Saved, fixed?: boolean): void;
+  // Remove the player's things. Fixed ones stay.
   clear(): void;
 }
 
