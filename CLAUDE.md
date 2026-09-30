@@ -19,18 +19,34 @@ Live site: https://espaull.github.io/interactive-ball-thing/ — every push to
 - `npx tsc -p .` — type-check
 - `npm run format` — Prettier (default settings); `format:check` to verify
 
-## Making levels
+## Levels made by players
+
+Anyone can make levels: Levels → My levels → ➕ Make a level opens the
+editor (`ui/editor.ts`, made for tablets). Draw the level with the normal
+tools, place its start, goal and hearts with the Start/Goal/Heart tools,
+and set its name, rider and what the player gets in the panel. **Try it**
+plays it for real; winning with every heart (having placed something)
+records that win's pieces as its solution, and only then can it be
+saved. 🎯 Limit to what I used sets the limits to the win's (changing
+limits doesn't undo a win while its pieces still fit). Saved levels are
+kept in the browser (`saves.myLevels()`), with whether each was made here
+or shared with you; editing a shared one makes your own copy.
+
+**Sharing** (`levels/share.ts`) packs a level, without its solution, into
+a link after `#level=` (never sent to a server; no backend at all). Only
+levels with a solution can be shared, so every shared level is known to
+be possible; a shared level gets one once you win it with every heart.
+Links come from anyone, so `decodeLevel` checks sizes, what they unpack
+to, and the level itself, and a link can never replace a level you made.
+
+## Making the built-in levels
 
 Run `npm run dev` and pick 🛠️ Editor on the front screen (it's only there
-in dev). Pick a level or ➕ New level, draw it with the normal tools, and
-place its start, goal and hearts with the Start/Goal/Heart tools. Set its
-id, name, tip, rider and limits in the panel. **Try it** plays it for
-real; winning with every heart (having placed something) records that
-win's pieces as its solution, and only then can it be **Saved**. Saving
-writes `src/levels/data/<id>.json` (new ones go on the end of
-`order.json`; reorder by editing that) and the page reloads back into the
-editor. Commit the files like any other change. To delete a level, delete
-its file and take it out of `order.json`.
+in dev). It's the same editor, with an Id field, and saving writes
+`src/levels/data/<id>.json` (new ones go on the end of `order.json`;
+reorder by editing that); the page then reloads back into the editor.
+Commit the files like any other change. To delete a level, delete its
+file and take it out of `order.json`.
 
 ## Layout
 
