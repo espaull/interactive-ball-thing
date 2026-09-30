@@ -554,6 +554,17 @@ body {
   }
 }
 
+/* A level shared with you. */
+#incoming .about {
+  margin: 0 0 20px;
+  font-size: 18px;
+  line-height: 1.5;
+  color: #444;
+}
+#incoming .hearts {
+  color: #f43f5e;
+}
+
 /* Winning: the hearts pop in one after another. */
 #win .hearts {
   margin: 0 0 20px;

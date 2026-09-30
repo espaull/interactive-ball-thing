@@ -2,8 +2,14 @@
 // tabs, and the win panel), the Go and Back buttons, and switching between
 // free play, levels and the level editor.
 import type { App } from "../app";
-import { fitsLimits, type Level } from "../levels/level";
+import { fitsLimits, newLevelId, type Level } from "../levels/level";
 import { LEVELS } from "../levels/levels";
+import {
+  codeInHash,
+  decodeLevel,
+  encodeLevel,
+  shareLink,
+} from "../levels/share";
 import type { MyLevel } from "../saves";
 import { emptyLayout } from "../world/layout";
 import { labelled } from "./toolbar";
@@ -71,7 +77,8 @@ export function setupLevels({
   const front = $("#front");
   const map = $("#level-map");
   const win = $("#win");
-  const screens = [front, map, win];
+  const incoming = $("#incoming");
+  const screens = [front, map, win, incoming];
   const backButton = $<HTMLButtonElement>("#back");
   const go = $<HTMLButtonElement>("#go");
   const next = win.querySelector<HTMLButtonElement>(".next")!;
@@ -167,19 +174,109 @@ export function setupLevels({
       );
       button.addEventListener("click", () => startMyLevel(mine));
       const edit = smallButton("✏️", "Edit", () => editor?.edit(mine));
+      // Only levels won with every heart can be shared, so every shared
+      // level is known to be possible.
+      const share = smallButton(
+        "📤",
+        level.solution ? "Share" : "Win it with every heart to share it",
+        () => void shareLevel(level),
+      );
+      share.disabled = !level.solution;
       const remove = deleteButton(() => {
         saves.removeLevel(level.id);
         showMap("mine");
       });
       const actions = document.createElement("div");
       actions.className = "actions";
-      actions.append(edit, remove);
+      actions.append(edit, share, remove);
       const tile = document.createElement("div");
       tile.className = "tile";
       tile.append(button, actions);
       return tile;
     });
     return [make, ...tiles];
+  }
+
+  // Share a level as a link: with the phone's share sheet where there is
+  // one, or else by copying the link.
+  async function shareLevel(level: Level): Promise<void> {
+    const note = map.querySelector(".note")!;
+    const page = location.href.split("#")[0];
+    const link = shareLink(page, await encodeLevel(level));
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: level.name,
+          text: `Try my level “${level.name}” in Ball Playground!`,
+          url: link,
+        });
+        return;
+      } catch (error) {
+        // Closing the share sheet isn't a failure.
+        if ((error as Error).name === "AbortError") return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(link);
+      note.textContent = `Link to “${level.name}” copied · send it to a friend`;
+    } catch {
+      window.prompt("Copy this link to share your level:", link);
+    }
+  }
+
+  // Someone's shared a level: offer to play it (keeping it in My levels).
+  // A link that isn't a good level says so.
+  async function openLink(): Promise<void> {
+    const code = codeInHash(location.hash);
+    if (code === null) return;
+    // Take it out of the address, so reloading doesn't bring it back.
+    window.history.replaceState(null, "", location.href.split("#")[0]);
+    const level = await decodeLevel(code);
+    const play = incoming.querySelector<HTMLButtonElement>(".play")!;
+    const later = incoming.querySelector<HTMLButtonElement>(".later")!;
+    incoming.querySelector("h2")!.textContent = level
+      ? "A level for you!"
+      : "That level link didn't work";
+    const about = incoming.querySelector(".about")!;
+    about.replaceChildren();
+    if (level) {
+      const name = document.createElement("strong");
+      name.textContent = `“${level.name}”`;
+      const hearts = document.createElement("span");
+      hearts.className = "hearts";
+      hearts.textContent = "♥".repeat(level.hearts.length);
+      about.append(
+        name,
+        document.createElement("br"),
+        `${level.rider === "sledge" ? "🛷 A sledge" : "⚽ A ball"} level`,
+        ...(level.hearts.length > 0 ? [" · ", hearts, " to collect"] : []),
+      );
+    }
+    play.hidden = !level;
+    play.onclick = () => level && startMyLevel(receive(level));
+    later.replaceChildren(
+      level ? "✕" : "👍",
+      labelled(level ? "Not now" : "OK"),
+    );
+    later.onclick = showFront;
+    show(incoming);
+  }
+
+  // Keep a level that's been shared with you in My levels (unless it's
+  // already there, which keeps what you've won).
+  function receive(level: Level): MyLevel {
+    const kept = saves.myLevels().find((m) => m.level.id === level.id);
+    const same = (a: Level, b: Level) =>
+      JSON.stringify({ ...a, solution: null }) ===
+      JSON.stringify({ ...b, solution: null });
+    if (kept && !kept.made && same(kept.level, level)) return kept;
+    // Never over one you made (which a link could only do on purpose).
+    const mine = {
+      level: kept?.made ? { ...level, id: newLevelId() } : level,
+      made: false,
+    };
+    saves.keepLevel(mine);
+    return mine;
   }
 
   function startLevel(i: number): void {
@@ -320,6 +417,8 @@ export function setupLevels({
 
   updateGo();
   showFront();
+  void openLink();
+  window.addEventListener("hashchange", () => void openLink());
 
   return {
     get mode() {
