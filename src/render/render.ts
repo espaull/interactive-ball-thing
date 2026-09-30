@@ -3,12 +3,13 @@ import type { Camera } from "../camera";
 import type { Effects } from "./effects";
 import type { GuideView } from "../guides";
 import type { Overlay } from "../tools";
-import type { Playground } from "../world/playground";
+import { Sledge, type Playground } from "../world/playground";
 import { ACCENT, ERASER_COLOR, PREVIEW_COLOR } from "../palette";
 import { drawBoostStrip } from "./boost";
 import { drawBubble } from "./bubble";
 import { drawDesign, drawPolyline, LINE_WIDTH_PX } from "./design";
 import { drawPortal } from "./portal";
+import { drawSledge } from "./sledge";
 
 // The background pattern is fixed to the world, so you can see the view
 // moving even over empty space.
@@ -136,6 +137,10 @@ export function render(
   drawPath(ctx, guides, camera.zoom);
 
   for (const ball of playground.balls) {
+    if (ball instanceof Sledge) {
+      drawSledge(ctx, ball, time);
+      continue;
+    }
     const { x, y } = ball.position;
     const angle = ball.angle;
 

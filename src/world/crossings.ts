@@ -187,9 +187,18 @@ export function segmentsCross(
   return inside(t) && inside(u) ? { x: a.x + rx * t, y: a.y + ry * t } : null;
 }
 
-// Is the crossing within reach of the body (a ball or bubble)?
+// Is the crossing within reach of the body (a ball, sledge or bubble)?
 function isNear(body: Body, crossing: Point): boolean {
-  const radius = body.getFixtureList()!.getShape().getRadius() * PX_PER_M;
+  // Half the size of its bounding box: a ball's radius, or about half a
+  // sledge's length.
+  const box = body.getFixtureList()!.getAABB(0);
+  const reach =
+    (Math.max(
+      box.upperBound.x - box.lowerBound.x,
+      box.upperBound.y - box.lowerBound.y,
+    ) /
+      2) *
+    PX_PER_M;
   const { x, y } = toPixels(body.getPosition());
-  return Math.hypot(x - crossing.x, y - crossing.y) < radius * 3;
+  return Math.hypot(x - crossing.x, y - crossing.y) < reach * 3;
 }

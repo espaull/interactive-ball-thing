@@ -25,6 +25,29 @@ export class BallTool implements Tool {
   }
 }
 
+// Tap to drop a sledge, with a rider on board.
+export class SledgeTool implements Tool {
+  label = "Sledge";
+  icon = "🛷";
+  title = "Tap to drop a sledge";
+  cursor = "pointer";
+  hints = {
+    mouse:
+      "Click to drop a sledge · it slides down slopes, faster than a ball · hold Space and drag to move around",
+    touch: "Tap to drop a sledge · it slides down slopes, faster than a ball",
+  };
+  popsBubbles = true;
+  busy = false;
+
+  constructor(private ctx: ToolContext) {}
+
+  down(p: Point): DownResult {
+    const sledge = this.ctx.playground.addSledge(p.x, p.y);
+    if (this.ctx.camera.following) this.ctx.camera.setFollowing(true, sledge);
+    return "none";
+  }
+}
+
 // Tap to blow a bubble.
 export class BubbleTool implements Tool {
   label = "Bubble";

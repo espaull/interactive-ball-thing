@@ -20,7 +20,8 @@ Live site: https://espaull.github.io/interactive-ball-thing/ — every push to
 ## Layout
 
 - `src/world/` — the simulation. `playground.ts` owns the Planck world,
-  balls, bubbles and stepping (which does nothing while `paused`: every
+  balls (and sledges, a `Ball` subclass, so everything that works on balls
+  works on them), bubbles and stepping (which does nothing while `paused`: every
   timer runs on the playground's own time, so everything waits). The
   design is made of **parts** (`part.ts`): `lines`, `boosts`, `portals`,
   `cups`, `cannons`, each a module that keeps

@@ -49,6 +49,20 @@ describe("predicting a ball's path", () => {
     expect(predicted[0].at(-1)!.x).toBeGreaterThan(200);
   });
 
+  it("predicts a sledge's path as a sledge", () => {
+    const pg = new Playground();
+    pg.lines.add([
+      { x: 0, y: 200 },
+      { x: 300, y: 400 },
+      { x: 800, y: 420 },
+    ]);
+    const sledge = pg.addSledge(40, 170);
+    const predicted = predictPath(pg, sledge);
+    const real = realPath(pg, 1.5);
+    expect(predicted.map((s) => s.length)).toEqual(real.map((s) => s.length));
+    expect(worstGap(predicted, real)).toBeLessThan(3);
+  });
+
   it("starts a new stretch after each trip through a portal", () => {
     const pg = new Playground();
     pg.world.setGravity({ x: 0, y: 0 });

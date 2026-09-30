@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Playground } from "./playground";
+import { Playground, Sledge } from "./playground";
 
 const STEP = 1 / 60;
 
@@ -83,6 +83,70 @@ describe("balls", () => {
     run(pg, 3);
     const bottom = ball.position.y + ball.radius;
     expect(bottom).toBeCloseTo(400, 0);
+  });
+});
+
+describe("sledges", () => {
+  // A 30° slope down to a long flat.
+  function hill(pg: Playground): void {
+    pg.lines.add([
+      { x: 0, y: 0 },
+      { x: 600, y: 346 },
+      { x: 5000, y: 346 },
+    ]);
+  }
+
+  it("slide down a slope without rolling, faster than a ball", () => {
+    // Side by side, each on its own hill.
+    const pg = new Playground();
+    hill(pg);
+    const sledge = pg.addSledge(40, 0);
+    run(pg, 1.5);
+    const other = new Playground();
+    hill(other);
+    const ball = other.addBall(40, 0);
+    run(other, 1.5);
+    // Lying along the slope, not turning over and over like the ball.
+    expect(sledge.angle).toBeCloseTo(Math.PI / 6, 1);
+    expect(sledge.position.x).toBeGreaterThan(ball.position.x + 20);
+  });
+
+  it("slow down on the flat, where a ball would roll on for ever", () => {
+    const pg = new Playground();
+    hill(pg);
+    const sledge = pg.addSledge(40, 0);
+    run(pg, 4);
+    const speed = sledge.speed;
+    run(pg, 2);
+    expect(sledge.speed).toBeLessThan(speed * 0.95);
+    expect(sledge.speed).toBeGreaterThan(speed * 0.5);
+  });
+
+  it("turn their rider round when sliding back the other way", () => {
+    const pg = new Playground();
+    // A valley: the sledge slides down one side, up the other, and back.
+    const valley = [];
+    for (let x = 0; x <= 800; x += 8) {
+      valley.push({ x, y: 550 - ((x - 400) / 400) ** 2 * 250 });
+    }
+    pg.lines.add(valley);
+    const sledge = pg.addSledge(100, 250);
+    expect(sledge.facing).toBe(1);
+    let turned = false;
+    run(pg, 5, () => {
+      if (sledge.facing === -1) turned = true;
+    });
+    expect(turned).toBe(true);
+  });
+
+  it("are kept with the balls, so everything that works on balls works on them", () => {
+    const pg = new Playground();
+    const sledge = pg.addSledge(100, 100);
+    expect(sledge).toBeInstanceOf(Sledge);
+    expect(pg.balls).toEqual([sledge]);
+    expect(pg.thingAt(120, 100)).toBe(sledge);
+    pg.eraseAt(100, 120, 10);
+    expect(pg.contains(sledge)).toBe(false);
   });
 });
 

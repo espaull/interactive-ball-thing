@@ -1,4 +1,4 @@
-import { World, CircleShape, type Body } from "planck";
+import { World, BoxShape, CircleShape, type Body } from "planck";
 import type { Box, Point } from "../geometry/point";
 import { BALL_COLORS } from "../palette";
 import { Boosts } from "./boosts";
@@ -22,6 +22,15 @@ export type { Grabbed } from "./part";
 export type { PortalEnd, PortalPair, Teleport } from "./portals";
 
 const BALL_RADIUS_M = 0.4;
+// A sledge is a flat block 48px long and 12px tall (the runners and the
+// seat); the rider is only drawn.
+const SLEDGE_HALF_LENGTH_M = 0.6;
+const SLEDGE_HALF_HEIGHT_M = 0.15;
+// The line's friction is 0.6, and Planck mixes the two as the square root
+// of their product, so this gives about 0.05: slippery, like snow.
+const SLEDGE_FRICTION = 0.004;
+// A sledge sliding backwards faster than this (m/s) turns its rider round.
+const SLEDGE_TURN_SPEED = 0.5;
 const MAX_BALLS = 200;
 const MAX_BUBBLES = 100;
 
@@ -43,8 +52,36 @@ export class Ball {
   }
 }
 
+// A sledge with a rider, in homage to Line Rider. It slides rather than
+// rolls, but otherwise goes everywhere a ball does: it's kept with the
+// balls, so boosts, portals, cups, the eraser and the guides treat it as one.
+export class Sledge extends Ball {
+  // Which way the rider faces along the sledge: 1 is towards its front
+  // (+x when level), -1 when it's turned round to slide the other way.
+  facing: 1 | -1 = 1;
+
+  // Pixels per second.
+  get speed(): number {
+    const v = this.body.getLinearVelocity();
+    return Math.hypot(v.x, v.y) * PX_PER_M;
+  }
+
+  // After each physics step: turn the rider round if the sledge is sliding
+  // backwards (like back down a hill it didn't make it up).
+  updateFacing(): void {
+    const v = this.body.getLinearVelocity();
+    const angle = this.body.getAngle();
+    const along = v.x * Math.cos(angle) + v.y * Math.sin(angle);
+    if (along * this.facing < -SLEDGE_TURN_SPEED) this.facing *= -1;
+  }
+}
+
 // Anything the camera can follow.
 export type Thing = Ball | Bubble;
+
+function randomBallColor(): string {
+  return BALL_COLORS[Math.floor(Math.random() * BALL_COLORS.length)];
+}
 
 // The last (topmost) item in `list` within `slack` pixels of its edge.
 function findAt<T extends Thing>(
@@ -67,6 +104,7 @@ function findAt<T extends Thing>(
 export class Playground {
   // y grows downwards, matching screen coordinates.
   readonly world = new World({ gravity: { x: 0, y: 10 } });
+  // Sledges too: everything that rides the tracks.
   readonly balls: Ball[] = [];
   readonly bubbles: Bubble[] = [];
   private time = 0;
@@ -144,6 +182,9 @@ export class Playground {
     this.boosts.push(this.balls.map((ball) => ball.body));
     this.bubbleBehaviour.beforeStep(this.time);
     this.world.step(dt, 8, 3);
+    for (const ball of this.balls) {
+      if (ball instanceof Sledge) ball.updateFacing();
+    }
     this.crossings.afterStep(this.time);
     for (const bubble of this.bubbleBehaviour.afterStep(this.time))
       this.popBubble(bubble);
@@ -249,23 +290,30 @@ export class Playground {
   // --- Balls and bubbles ---
 
   addBall(x: number, y: number): Ball {
-    const body = this.world.createBody({
-      type: "dynamic",
-      position: toMetres({ x, y }),
-      bullet: true, // continuous collision, so fast balls can't skip through thin lines
-    });
+    const body = this.createRiderBody(x, y);
     body.createFixture({
       shape: new CircleShape(BALL_RADIUS_M),
       density: 1,
       friction: 0.4,
       restitution: 0.3,
     });
-    const color = BALL_COLORS[Math.floor(Math.random() * BALL_COLORS.length)];
-    const ball = new Ball(body, BALL_RADIUS_M * PX_PER_M, color);
-    this.balls.push(ball);
+    return this.keep(
+      new Ball(body, BALL_RADIUS_M * PX_PER_M, randomBallColor()),
+    );
+  }
 
-    if (this.balls.length > MAX_BALLS) this.removeBall(this.balls[0]);
-    return ball;
+  // A sledge, level and facing right, like Line Rider's.
+  addSledge(x: number, y: number): Sledge {
+    const body = this.createRiderBody(x, y);
+    body.createFixture({
+      shape: new BoxShape(SLEDGE_HALF_LENGTH_M, SLEDGE_HALF_HEIGHT_M),
+      density: 1.4, // about as heavy as a ball
+      friction: SLEDGE_FRICTION,
+      restitution: 0.05, // lands with a thud, not a bounce
+    });
+    return this.keep(
+      new Sledge(body, SLEDGE_HALF_LENGTH_M * PX_PER_M, randomBallColor()),
+    );
   }
 
   addBubble(x: number, y: number): Bubble {
@@ -327,6 +375,22 @@ export class Playground {
     this.bubbles.length = 0;
     this.bubbleBehaviour.clear();
     this.crossings.clear();
+  }
+
+  // A body for a ball or sledge, which gets its shape added after.
+  private createRiderBody(x: number, y: number): Body {
+    return this.world.createBody({
+      type: "dynamic",
+      position: toMetres({ x, y }),
+      bullet: true, // continuous collision, so fast balls can't skip through thin lines
+    });
+  }
+
+  // Add a new ball or sledge, making room if there are too many.
+  private keep<T extends Ball>(ball: T): T {
+    this.balls.push(ball);
+    if (this.balls.length > MAX_BALLS) this.removeBall(this.balls[0]);
+    return ball;
   }
 
   private removeBall(ball: Ball): void {

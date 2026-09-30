@@ -102,6 +102,27 @@ describe("a line crossing itself", () => {
     expect(ball.position.y).toBeGreaterThan(floorY - 40);
   });
 
+  it("lets a sledge round the loop too", () => {
+    const pg = new Playground();
+    pg.lines.add(pigtail());
+    pg.boosts.add([
+      { x: X0 - 480, y: floorY - 10 },
+      { x: X0 - 20, y: floorY - 10 },
+    ]);
+    const sledge = pg.addSledge(X0 - 450, floorY - 20);
+
+    let wentOverTheTop = false;
+    for (let t = 0; t < 4; t += STEP) {
+      pg.step(STEP);
+      if (sledge.position.y < Y0 - d * 0.5) wentOverTheTop = true;
+    }
+    expect(wentOverTheTop).toBe(true);
+    expect(sledge.position.x).toBeGreaterThan(loopEndX + 150);
+    // Right way up on the exit, having turned all the way round once.
+    expect(sledge.position.y).toBeGreaterThan(floorY - 40);
+    expect(Math.cos(sledge.angle)).toBeGreaterThan(0.9);
+  });
+
   // Regression: at speed a ball can hop off its track at a bump or corner
   // and reach the crossing in mid-air. It used to crash into the other
   // strand, because it wasn't touching its own track at that moment.

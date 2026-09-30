@@ -8,7 +8,7 @@ import { EraserTool } from "./eraser";
 import { MoveTool } from "./move";
 import { PencilTool } from "./pencil";
 import { PortalTool } from "./portal";
-import { BallTool, BubbleTool } from "./spawn";
+import { BallTool, BubbleTool, SledgeTool } from "./spawn";
 import type { Tool, ToolContext } from "./tool";
 
 export type { Overlay, Tool } from "./tool";
@@ -35,6 +35,11 @@ export function createToolGroups(
     [new EraserTool(ctx)],
     [new BoostTool(ctx), new PortalTool(ctx), new CupTool(ctx)],
     [new MoveTool(ctx)],
-    [new BallTool(ctx), new BubbleTool(ctx), new CannonTool(ctx)],
+    [
+      new BallTool(ctx),
+      new SledgeTool(ctx),
+      new BubbleTool(ctx),
+      new CannonTool(ctx),
+    ],
   ];
 }
