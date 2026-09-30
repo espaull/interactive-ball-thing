@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { Camera } from "./camera";
 import { Guides } from "./guides";
 import { Playground } from "./world/playground";
@@ -79,5 +79,42 @@ describe("the trail", () => {
     const { playground, guides, run } = setUp();
     run(1);
     expect(guides.view(playground).trail).toEqual([]);
+  });
+});
+
+describe("the predicted path", () => {
+  it("shows only while paused, and only for a ball", () => {
+    const { playground, guides, run } = setUp();
+    playground.addBubble(100, 100);
+    run(0.1);
+    playground.setPaused(true);
+    expect(guides.view(playground).path).toEqual([]);
+    playground.addBall(200, 100).body.setLinearVelocity({ x: 5, y: 0 });
+    run(0.1);
+    const path = guides.view(playground).path;
+    expect(path).toHaveLength(1);
+    expect(path[0].at(-1)!.x).toBeGreaterThan(400);
+    playground.setPaused(false);
+    expect(guides.view(playground).path).toEqual([]);
+  });
+
+  it("is worked out again only when the design or the ball changes", () => {
+    const { playground, guides, run } = setUp();
+    playground.addBall(200, 100).body.setLinearVelocity({ x: 5, y: 0 });
+    playground.setPaused(true);
+    run(0.1);
+    const layout = vi.spyOn(playground, "layout");
+    guides.view(playground);
+    guides.view(playground);
+    expect(layout).toHaveBeenCalledTimes(1);
+
+    // A wall in the way: the path now stops short of it.
+    playground.lines.add([
+      { x: 300, y: 0 },
+      { x: 300, y: 200 },
+    ]);
+    const path = guides.view(playground).path;
+    expect(layout).toHaveBeenCalledTimes(2);
+    expect(Math.max(...path[0].map((p) => p.x))).toBeLessThan(300);
   });
 });

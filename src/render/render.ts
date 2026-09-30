@@ -133,6 +133,7 @@ export function render(
   }
 
   drawTrail(ctx, guides);
+  drawPath(ctx, guides, camera.zoom);
 
   for (const ball of playground.balls) {
     const { x, y } = ball.position;
@@ -199,4 +200,29 @@ function drawTrail(ctx: CanvasRenderingContext2D, guides: GuideView): void {
     }
   }
   ctx.globalAlpha = 1;
+}
+
+// Where the ball will go next (while paused): white dots ringed in the
+// accent colour, like a cannon's aim but hollow-looking, getting smaller
+// further ahead. One every few steps.
+function drawPath(
+  ctx: CanvasRenderingContext2D,
+  guides: GuideView,
+  zoom: number,
+): void {
+  const total = guides.path.reduce((n, stretch) => n + stretch.length, 0);
+  let i = 0;
+  ctx.fillStyle = "#ffffff";
+  ctx.strokeStyle = ACCENT;
+  ctx.lineWidth = 2 / zoom;
+  for (const stretch of guides.path) {
+    for (const { x, y } of stretch) {
+      if (i++ % 4 !== 0) continue;
+      const ahead = i / total;
+      ctx.beginPath();
+      ctx.arc(x, y, (4.5 - 2 * ahead) / zoom, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+  }
 }

@@ -1,9 +1,10 @@
 // Guides for building a track around a moving ball: a trail showing where
-// it's just been. They follow one ball: the one the camera's following, or
-// else the newest.
+// it's just been, and (while paused) the path it's about to take. They
+// follow one ball: the one the camera's following, or else the newest.
 import type { Camera } from "./camera";
 import { distance, type Point } from "./geometry/point";
 import { Ball, type Playground, type Thing } from "./world/playground";
+import { predictPath } from "./world/prediction";
 
 // How long the trail lasts, in seconds of the playground's time, so it
 // holds still while paused.
@@ -29,11 +30,17 @@ export interface GuideView {
   trail: TrailDot[][];
   // The ball's colour, for its trail.
   color: string;
+  // Where it'll go next, while paused: stretches of path, split at portals.
+  path: Point[][];
 }
 
 export class Guides {
   private focus: Thing | null = null;
   private marks: Mark[] = [];
+  // The last prediction, and what it was worked out from, so it's only
+  // worked out again when the design or the ball changes.
+  private path: Point[][] = [];
+  private pathFrom = "";
 
   // The ball the guides are about: the one being followed, or else the
   // newest ball.
@@ -50,6 +57,7 @@ export class Guides {
     if (focus === this.focus) return;
     this.focus = focus;
     this.marks = [];
+    this.pathFrom = "";
   }
 
   // After each physics step (not while paused): note where the ball is.
@@ -80,6 +88,21 @@ export class Guides {
       });
     }
     const color = this.focus instanceof Ball ? this.focus.color : "#ffffff";
-    return { trail, color };
+    return { trail, color, path: this.predict(playground) };
+  }
+
+  // Where the ball will go if play carries on. Only while paused (while
+  // playing, you can just watch), and only for balls, as bubbles wander.
+  private predict(playground: Playground): Point[][] {
+    const ball = this.focus;
+    if (!playground.paused || !(ball instanceof Ball)) return [];
+    const { x, y } = ball.position;
+    const v = ball.body.getLinearVelocity();
+    const from = `${playground.revision} ${x},${y} ${v.x},${v.y}`;
+    if (from !== this.pathFrom) {
+      this.path = predictPath(playground, ball);
+      this.pathFrom = from;
+    }
+    return this.path;
   }
 }
