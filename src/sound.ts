@@ -103,3 +103,47 @@ export function playThump(): void {
   osc.start(now);
   osc.stop(now + 0.2);
 }
+
+// A bright two-note "ding-ding" for collecting a heart.
+export function playHeart(): void {
+  const ctx = getAudio();
+  if (!ctx) return;
+
+  const now = ctx.currentTime;
+  // E and A, high up, the second a touch after the first.
+  [1319, 1760].forEach((pitch, i) => {
+    const start = now + i * 0.07;
+    const osc = ctx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(pitch, start);
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(0.12, start + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.25);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(start);
+    osc.stop(start + 0.3);
+  });
+}
+
+// A soft falling "whoosh" for the rider getting lost and going back to the
+// start.
+export function playWhoosh(): void {
+  const ctx = getAudio();
+  if (!ctx) return;
+
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  osc.type = "triangle";
+  osc.frequency.setValueAtTime(700, now);
+  osc.frequency.exponentialRampToValueAtTime(200, now + 0.25);
+
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.08, now + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
+
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(now);
+  osc.stop(now + 0.3);
+}

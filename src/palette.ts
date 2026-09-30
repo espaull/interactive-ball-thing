@@ -51,6 +51,11 @@ export const PORTAL_COLORS = [
 export const CUP_COLOR = "#f59e0b";
 export const CUP_SHINE = "#fde68a";
 
+// Hearts to collect in a level, and the little ones they burst into.
+export const HEART_COLOR = "#f43f5e";
+export const HEART_SHINE = "#ffe4e6";
+export const HEART_BURST_COLORS = ["#f43f5e", "#ec4899", "#fb7185", "#f472b6"];
+
 // Cannons: a dark slate barrel on a wooden wheel.
 export const CANNON_COLOR = "#334155";
 export const CANNON_WHEEL = "#92400e";
