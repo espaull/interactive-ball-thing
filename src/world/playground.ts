@@ -50,6 +50,12 @@ export class Ball {
   get angle(): number {
     return this.body.getAngle();
   }
+
+  // Pixels per second.
+  get speed(): number {
+    const v = this.body.getLinearVelocity();
+    return Math.hypot(v.x, v.y) * PX_PER_M;
+  }
 }
 
 // A sledge with a rider, in homage to Line Rider. It slides rather than
@@ -59,12 +65,6 @@ export class Sledge extends Ball {
   // Which way the rider faces along the sledge: 1 is towards its front
   // (+x when level), -1 when it's turned round to slide the other way.
   facing: 1 | -1 = 1;
-
-  // Pixels per second.
-  get speed(): number {
-    const v = this.body.getLinearVelocity();
-    return Math.hypot(v.x, v.y) * PX_PER_M;
-  }
 
   // After each physics step: turn the rider round if the sledge is sliding
   // backwards (like back down a hill it didn't make it up).
@@ -79,7 +79,7 @@ export class Sledge extends Ball {
 // Anything the camera can follow.
 export type Thing = Ball | Bubble;
 
-function randomBallColor(): string {
+export function randomBallColor(): string {
   return BALL_COLORS[Math.floor(Math.random() * BALL_COLORS.length)];
 }
 
@@ -313,7 +313,8 @@ export class Playground {
 
   // --- Balls and bubbles ---
 
-  addBall(x: number, y: number): Ball {
+  // A ball, in a random colour unless it's given one.
+  addBall(x: number, y: number, color = randomBallColor()): Ball {
     const body = this.createRiderBody(x, y);
     body.createFixture({
       shape: new CircleShape(BALL_RADIUS_M),
@@ -321,13 +322,11 @@ export class Playground {
       friction: 0.4,
       restitution: 0.3,
     });
-    return this.keep(
-      new Ball(body, BALL_RADIUS_M * PX_PER_M, randomBallColor()),
-    );
+    return this.keep(new Ball(body, BALL_RADIUS_M * PX_PER_M, color));
   }
 
   // A sledge, level and facing right, like Line Rider's.
-  addSledge(x: number, y: number): Sledge {
+  addSledge(x: number, y: number, color = randomBallColor()): Sledge {
     const body = this.createRiderBody(x, y);
     body.createFixture({
       shape: new BoxShape(SLEDGE_HALF_LENGTH_M, SLEDGE_HALF_HEIGHT_M),
@@ -335,9 +334,7 @@ export class Playground {
       friction: SLEDGE_FRICTION,
       restitution: 0.05, // lands with a thud, not a bounce
     });
-    return this.keep(
-      new Sledge(body, SLEDGE_HALF_LENGTH_M * PX_PER_M, randomBallColor()),
-    );
+    return this.keep(new Sledge(body, SLEDGE_HALF_LENGTH_M * PX_PER_M, color));
   }
 
   addBubble(x: number, y: number): Bubble {
@@ -419,7 +416,8 @@ export class Playground {
     return ball;
   }
 
-  private removeBall(ball: Ball): void {
+  removeBall(ball: Ball): void {
+    if (!this.balls.includes(ball)) return;
     this.world.destroyBody(ball.body);
     this.balls.splice(this.balls.indexOf(ball), 1);
   }
