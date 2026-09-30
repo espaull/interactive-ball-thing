@@ -1,8 +1,10 @@
 # Ball Playground
 
-A physics playground for a young child: draw tracks, drop balls and bubbles,
-add boosts, portals, cups and cannons. Runs in the browser (Mac, PC, phones
-and tablets). Vite + TypeScript + Planck.js (a Box2D port) + Canvas 2D.
+A physics playground for children: draw tracks, drop balls, sledges and
+bubbles, add boosts, portals, cups and cannons. Free play is the sandbox;
+Levels are puzzles (get the rider into the cup with limited pieces,
+collecting hearts). Runs in the browser (Mac, PC, phones and tablets).
+Vite + TypeScript + Planck.js (a Box2D port) + Canvas 2D.
 
 Live site: https://espaull.github.io/interactive-ball-thing/ — every push to
 `main` checks formatting, tests, builds and deploys it
@@ -35,7 +37,10 @@ Live site: https://espaull.github.io/interactive-ball-thing/ — every push to
   they work like any other but can't be erased, moved or joined onto, and
   aren't in `layout()`, so saves and Undo never see them. `saved.ts`
   has the helpers each part's parser uses. `bubbles` and `crossings` add
-  behaviour on top of Planck.
+  behaviour on top of Planck. `budget.ts` holds a level's limits (ink and
+  boost in pixels, portals etc. counted) and what's left of each; each
+  tool names the `supply` it uses, and the toolbar only offers tools the
+  budget allows.
   **Planck works in metres; only code in `world/` may touch Planck bodies
   or `PX_PER_M`.** Everything else uses pixels (`ball.position`).
 - `src/tools/` — one class per toolbar tool, implementing `Tool` (`tool.ts`).
@@ -47,8 +52,17 @@ Live site: https://espaull.github.io/interactive-ball-thing/ — every push to
 - `src/render/` — drawing; `design.ts` draws the design for the screen and
   the gallery's pictures (which are fitted using each part's `extent`).
   `src/palette.ts` holds the colours.
-- `src/ui/` — the HTML controls: `toolbar` (tool buttons, menus, hint),
-  `actions` (Pause, Follow, Home, Undo, Clear), `background`, `gallery`.
+- `src/levels/` — `level.ts` (what a level is), `levels.ts` (the levels, in
+  order), `play.ts` (`LevelPlay`: fixes a level's pieces, sets the budget,
+  keeps the rider waiting paused until Go, collects hearts, wins at the
+  goal cup, resets a lost or stuck rider). `solutions.ts` is only for
+  `levels.test.ts`, which proves every level can be won with every heart
+  within its limits. **A new or changed level needs its solution updated
+  and that test passing.**
+- `src/ui/` — the HTML controls: `toolbar` (tool buttons, menus, hint,
+  supply meters), `actions` (Pause, Follow, Home, Undo, Clear),
+  `background`, `gallery`, `levels` (front screen, level map, win panel,
+  Go and Back, and switching between free play and a level).
   Each `setup…` takes the `App` (`src/app.ts`), which `main.ts` builds
   before running the fixed-step game loop. Keyboard shortcuts (plain keys
   like P, or with Ctrl/Cmd) go through `input.addShortcut`, so the tools
@@ -63,9 +77,10 @@ Live site: https://espaull.github.io/interactive-ball-thing/ — every push to
   (`input.actionEnded`, `playground.designChanged`, `history.changed`).
   Effects and sounds use plain callbacks (`playground.onCatch`), as only
   `main.ts` listens to them.
-- `src/saves.ts` — the autosave (2s after a change) and the gallery, in
-  `localStorage`. What's saved is a `Layout` (`world/layout.ts`): each
-  part's things, no balls or bubbles.
+- `src/saves.ts` — the autosave (2s after a change; paused while in a
+  level, so a level never overwrites free play), the gallery, and level
+  progress (most hearts per level), in `localStorage`. What's saved is a
+  `Layout` (`world/layout.ts`): each part's things, no balls or bubbles.
 - `src/history.ts` — Undo/redo: snapshots of the `Layout`, checkpointed
   whenever `Input` says an action has ended (and after Clear and loading),
   skipped when `playground.revision` hasn't moved.
