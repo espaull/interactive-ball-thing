@@ -38,7 +38,7 @@ const playground = new Playground();
 const camera = new Camera();
 const effects = new Effects();
 const budget = new Budget(playground);
-// The level being made in the editor (dev only).
+// The level being made in the editor.
 const draft = new LevelDraft();
 const toolGroups = createToolGroups(playground, camera, budget, draft);
 const input = new Input(canvas, playground, camera, toolGroups[0][0]);
@@ -111,7 +111,7 @@ const app: App = {
 setupActions(app);
 setupGallery(app);
 const screens = setupLevels(app);
-if (import.meta.env.DEV) setupEditor(app, screens, draft);
+screens.setEditor(setupEditor(app, screens, draft));
 
 // A level's hearts to draw, and in the editor where its rider starts.
 function levelMarks(): LevelMarks {

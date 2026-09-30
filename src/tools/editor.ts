@@ -27,7 +27,7 @@ export class StartTool implements Tool {
 
 export class GoalTool implements Tool {
   label = "Goal";
-  icon = "🥅";
+  icon = "🏆";
   title = "Where the goal cup is";
   cursor = "crosshair";
   hints = {
