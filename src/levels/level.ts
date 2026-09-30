@@ -38,6 +38,9 @@ export interface Level {
 }
 
 export const MAX_HEARTS = 3;
+// Longer names and tips are cut short (levels can come from anyone).
+const MAX_NAME = 40;
+const MAX_TIP = 120;
 
 // How much of each supply some pieces use.
 export function usage(layout: Layout) {
@@ -90,8 +93,11 @@ export function parseLevel(data: unknown): Level | null {
   }
   return {
     id: data.id,
-    name: typeof data.name === "string" ? data.name : data.id,
-    tip: typeof data.tip === "string" ? data.tip : "",
+    name: (typeof data.name === "string" ? data.name : data.id).slice(
+      0,
+      MAX_NAME,
+    ),
+    tip: (typeof data.tip === "string" ? data.tip : "").slice(0, MAX_TIP),
     rider: data.rider === "sledge" ? "sledge" : "ball",
     start: roundPoint(data.start),
     goal: roundPoint(data.goal),
