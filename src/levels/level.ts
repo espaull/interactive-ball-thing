@@ -1,4 +1,4 @@
-import type { Point } from "../geometry/point";
+import { polylineLength, type Point } from "../geometry/point";
 import type { Limits } from "../world/budget";
 import { parseLayout, type Layout } from "../world/layout";
 import { isNumber, isPoint, isRecord, list, roundPoint } from "../world/saved";
@@ -38,6 +38,30 @@ export interface Level {
 }
 
 export const MAX_HEARTS = 3;
+
+// How much of each supply some pieces use.
+export function usage(layout: Layout) {
+  const length = (lines: Point[][]) =>
+    lines.reduce((total, points) => total + polylineLength(points), 0);
+  return {
+    ink: length(layout.lines),
+    boost: length(layout.boosts),
+    portals: layout.portals.length,
+    others: layout.cups.length + layout.cannons.length,
+  };
+}
+
+// Could a player place these pieces within the limits? (To within a pixel
+// or two, as joining lines smooths the joins.)
+export function fitsLimits(layout: Layout, limits: LevelLimits): boolean {
+  const used = usage(layout);
+  return (
+    used.ink <= (limits.ink ?? 0) + 2 &&
+    used.boost <= (limits.boost ?? 0) + 2 &&
+    used.portals <= (limits.portals ?? 0) &&
+    used.others === 0
+  );
+}
 
 // Ids are file names: lower case letters, digits and dashes.
 export function isLevelId(id: unknown): id is string {
